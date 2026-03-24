@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" width="800" height="400" font-family="'Segoe UI', Arial, sans-serif">
+  <defs>
+    <marker id="arrow1" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#326CE5"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="400" rx="8" fill="#F5F5F5"/>
+
+  <!-- Title -->
+  <text x="400" y="35" text-anchor="middle" font-size="18" font-weight="bold" fill="#333">Exercice : Exploration de la console OpenShift</text>
+
+  <!-- Step 1 -->
+  <rect x="20" y="70" width="110" height="55" rx="8" fill="#326CE5"/>
+  <text x="75" y="93" text-anchor="middle" font-size="13" font-weight="bold" fill="white">Connexion</text>
+  <text x="75" y="112" text-anchor="middle" font-size="20" fill="white">1</text>
+
+  <!-- Arrow 1-2 -->
+  <line x1="130" y1="97" x2="155" y2="97" stroke="#326CE5" stroke-width="2" marker-end="url(#arrow1)"/>
+
+  <!-- Step 2 -->
+  <rect x="160" y="70" width="110" height="55" rx="8" fill="#326CE5"/>
+  <text x="215" y="88" text-anchor="middle" font-size="12" font-weight="bold" fill="white">Créer un</text>
+  <text x="215" y="104" text-anchor="middle" font-size="12" font-weight="bold" fill="white">projet</text>
+  <text x="215" y="120" text-anchor="middle" font-size="18" fill="white">2</text>
+
+  <!-- Arrow 2-3 -->
+  <line x1="270" y1="97" x2="295" y2="97" stroke="#326CE5" stroke-width="2" marker-end="url(#arrow1)"/>
+
+  <!-- Step 3 -->
+  <rect x="300" y="70" width="110" height="55" rx="8" fill="#326CE5"/>
+  <text x="355" y="88" text-anchor="middle" font-size="12" font-weight="bold" fill="white">Déployer</text>
+  <text x="355" y="104" text-anchor="middle" font-size="12" font-weight="bold" fill="white">une image</text>
+  <text x="355" y="120" text-anchor="middle" font-size="18" fill="white">3</text>
+
+  <!-- Arrow 3-4 -->
+  <line x1="410" y1="97" x2="435" y2="97" stroke="#326CE5" stroke-width="2" marker-end="url(#arrow1)"/>
+
+  <!-- Step 4 -->
+  <rect x="440" y="70" width="110" height="55" rx="8" fill="#326CE5"/>
+  <text x="495" y="88" text-anchor="middle" font-size="12" font-weight="bold" fill="white">Accéder</text>
+  <text x="495" y="104" text-anchor="middle" font-size="12" font-weight="bold" fill="white">via Route</text>
+  <text x="495" y="120" text-anchor="middle" font-size="18" fill="white">4</text>
+
+  <!-- Arrow 4-5 -->
+  <line x1="550" y1="97" x2="575" y2="97" stroke="#326CE5" stroke-width="2" marker-end="url(#arrow1)"/>
+
+  <!-- Step 5 -->
+  <rect x="580" y="70" width="90" height="55" rx="8" fill="#326CE5"/>
+  <text x="625" y="93" text-anchor="middle" font-size="13" font-weight="bold" fill="white">Inspecter</text>
+  <text x="625" y="112" text-anchor="middle" font-size="18" fill="white">5</text>
+
+  <!-- Arrow 5-6 -->
+  <line x1="670" y1="97" x2="695" y2="97" stroke="#326CE5" stroke-width="2" marker-end="url(#arrow1)"/>
+
+  <!-- Step 6 -->
+  <rect x="700" y="70" width="80" height="55" rx="8" fill="#EE0000"/>
+  <text x="740" y="93" text-anchor="middle" font-size="13" font-weight="bold" fill="white">Nettoyer</text>
+  <text x="740" y="112" text-anchor="middle" font-size="18" fill="white">6</text>
+
+  <!-- Detail boxes below -->
+  <g transform="translate(0, 160)">
+    <!-- Step 1 detail -->
+    <rect x="20" y="0" width="110" height="65" rx="6" fill="white" stroke="#326CE5" stroke-width="1.5"/>
+    <text x="75" y="20" text-anchor="middle" font-size="11" fill="#555">oc login ou</text>
+    <text x="75" y="35" text-anchor="middle" font-size="11" fill="#555">console web</text>
+    <text x="75" y="55" text-anchor="middle" font-size="10" fill="#999">URL + credentials</text>
+
+    <!-- Step 2 detail -->
+    <rect x="160" y="0" width="110" height="65" rx="6" fill="white" stroke="#326CE5" stroke-width="1.5"/>
+    <text x="215" y="20" text-anchor="middle" font-size="11" fill="#555">Home > Projects</text>
+    <text x="215" y="35" text-anchor="middle" font-size="11" fill="#555">> Create</text>
+    <text x="215" y="55" text-anchor="middle" font-size="10" fill="#999">mon-projet-xx</text>
+
+    <!-- Step 3 detail -->
+    <rect x="300" y="0" width="110" height="65" rx="6" fill="white" stroke="#326CE5" stroke-width="1.5"/>
+    <text x="355" y="20" text-anchor="middle" font-size="11" fill="#555">+Add ></text>
+    <text x="355" y="35" text-anchor="middle" font-size="11" fill="#555">Container Image</text>
+    <text x="355" y="55" text-anchor="middle" font-size="10" fill="#999">nginx / httpd</text>
+
+    <!-- Step 4 detail -->
+    <rect x="440" y="0" width="110" height="65" rx="6" fill="white" stroke="#326CE5" stroke-width="1.5"/>
+    <text x="495" y="20" text-anchor="middle" font-size="11" fill="#555">Networking ></text>
+    <text x="495" y="35" text-anchor="middle" font-size="11" fill="#555">Routes > URL</text>
+    <text x="495" y="55" text-anchor="middle" font-size="10" fill="#999">Ouvrir le lien</text>
+
+    <!-- Step 5 detail -->
+    <rect x="580" y="0" width="90" height="65" rx="6" fill="white" stroke="#326CE5" stroke-width="1.5"/>
+    <text x="625" y="20" text-anchor="middle" font-size="11" fill="#555">Pods, logs,</text>
+    <text x="625" y="35" text-anchor="middle" font-size="11" fill="#555">events</text>
+    <text x="625" y="55" text-anchor="middle" font-size="10" fill="#999">Monitoring</text>
+
+    <!-- Step 6 detail -->
+    <rect x="700" y="0" width="80" height="65" rx="6" fill="white" stroke="#EE0000" stroke-width="1.5"/>
+    <text x="740" y="20" text-anchor="middle" font-size="11" fill="#555">Supprimer</text>
+    <text x="740" y="35" text-anchor="middle" font-size="11" fill="#555">le projet</text>
+    <text x="740" y="55" text-anchor="middle" font-size="10" fill="#999">oc delete</text>
+  </g>
+
+  <!-- Connecting dotted lines from steps to details -->
+  <line x1="75" y1="125" x2="75" y2="160" stroke="#326CE5" stroke-width="1" stroke-dasharray="3,3"/>
+  <line x1="215" y1="125" x2="215" y2="160" stroke="#326CE5" stroke-width="1" stroke-dasharray="3,3"/>
+  <line x1="355" y1="125" x2="355" y2="160" stroke="#326CE5" stroke-width="1" stroke-dasharray="3,3"/>
+  <line x1="495" y1="125" x2="495" y2="160" stroke="#326CE5" stroke-width="1" stroke-dasharray="3,3"/>
+  <line x1="625" y1="125" x2="625" y2="160" stroke="#326CE5" stroke-width="1" stroke-dasharray="3,3"/>
+  <line x1="740" y1="125" x2="740" y2="160" stroke="#EE0000" stroke-width="1" stroke-dasharray="3,3"/>
+</svg>

@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" width="800" height="400" font-family="'Segoe UI', Arial, sans-serif">
+  <rect width="800" height="400" rx="8" fill="#F5F5F5"/>
+
+  <!-- Title -->
+  <text x="400" y="35" text-anchor="middle" font-size="18" font-weight="bold" fill="#333">Structure d'un manifeste Kubernetes</text>
+
+  <!-- YAML document background -->
+  <rect x="30" y="55" width="370" height="330" rx="8" fill="white" stroke="#DDD" stroke-width="1.5"/>
+  <rect x="30" y="55" width="370" height="30" rx="8" fill="#333"/>
+  <rect x="30" y="75" width="370" height="10" fill="#333"/>
+  <text x="215" y="75" text-anchor="middle" font-size="13" font-weight="bold" fill="white">deployment.yaml</text>
+
+  <!-- apiVersion -->
+  <rect x="45" y="95" width="340" height="28" rx="4" fill="#E3F2FD"/>
+  <text x="55" y="114" font-size="13" font-family="monospace" fill="#326CE5" font-weight="bold">apiVersion:</text>
+  <text x="175" y="114" font-size="13" font-family="monospace" fill="#555">apps/v1</text>
+
+  <!-- kind -->
+  <rect x="45" y="130" width="340" height="28" rx="4" fill="#E8F5E9"/>
+  <text x="55" y="149" font-size="13" font-family="monospace" fill="#4CAF50" font-weight="bold">kind:</text>
+  <text x="115" y="149" font-size="13" font-family="monospace" fill="#555">Deployment</text>
+
+  <!-- metadata -->
+  <rect x="45" y="165" width="340" height="95" rx="4" fill="#FFF3E0" stroke="#FF9800" stroke-width="1"/>
+  <text x="55" y="184" font-size="13" font-family="monospace" fill="#FF9800" font-weight="bold">metadata:</text>
+  <text x="75" y="204" font-size="12" font-family="monospace" fill="#555">name: mon-app</text>
+  <text x="75" y="222" font-size="12" font-family="monospace" fill="#555">namespace: mon-projet</text>
+  <text x="75" y="240" font-size="12" font-family="monospace" fill="#555">labels:</text>
+  <text x="95" y="253" font-size="11" font-family="monospace" fill="#888">app: mon-app</text>
+
+  <!-- spec -->
+  <rect x="45" y="267" width="340" height="65" rx="4" fill="#F3E5F5" stroke="#9C27B0" stroke-width="1"/>
+  <text x="55" y="286" font-size="13" font-family="monospace" fill="#9C27B0" font-weight="bold">spec:</text>
+  <text x="75" y="304" font-size="12" font-family="monospace" fill="#555">replicas: 3</text>
+  <text x="75" y="322" font-size="12" font-family="monospace" fill="#555">template: ...</text>
+
+  <!-- status -->
+  <rect x="45" y="339" width="340" height="35" rx="4" fill="#FFEBEE" stroke="#EE0000" stroke-width="1"/>
+  <text x="55" y="358" font-size="13" font-family="monospace" fill="#EE0000" font-weight="bold">status:</text>
+  <text x="120" y="358" font-size="12" font-family="monospace" fill="#888">(géré par le cluster)</text>
+
+  <!-- Annotations on the right -->
+  <!-- apiVersion annotation -->
+  <line x1="385" y1="109" x2="430" y2="109" stroke="#326CE5" stroke-width="1.5"/>
+  <rect x="435" y="92" width="340" height="35" rx="6" fill="white" stroke="#326CE5" stroke-width="1.5"/>
+  <text x="450" y="108" font-size="12" font-weight="bold" fill="#326CE5">apiVersion</text>
+  <text x="450" y="122" font-size="11" fill="#666">Version de l'API Kubernetes utilisée</text>
+
+  <!-- kind annotation -->
+  <line x1="385" y1="144" x2="430" y2="150" stroke="#4CAF50" stroke-width="1.5"/>
+  <rect x="435" y="135" width="340" height="35" rx="6" fill="white" stroke="#4CAF50" stroke-width="1.5"/>
+  <text x="450" y="151" font-size="12" font-weight="bold" fill="#4CAF50">kind</text>
+  <text x="450" y="165" font-size="11" fill="#666">Type de la ressource (Deployment, Service...)</text>
+
+  <!-- metadata annotation -->
+  <line x1="385" y1="212" x2="430" y2="197" stroke="#FF9800" stroke-width="1.5"/>
+  <rect x="435" y="178" width="340" height="45" rx="6" fill="white" stroke="#FF9800" stroke-width="1.5"/>
+  <text x="450" y="196" font-size="12" font-weight="bold" fill="#FF9800">metadata</text>
+  <text x="450" y="210" font-size="11" fill="#666">Nom, namespace, labels, annotations</text>
+  <text x="450" y="220" font-size="10" fill="#999">Identifie de manière unique la ressource</text>
+
+  <!-- spec annotation -->
+  <rect x="435" y="240" width="340" height="45" rx="6" fill="white" stroke="#9C27B0" stroke-width="1.5"/>
+  <line x1="385" y1="295" x2="430" y2="262" stroke="#9C27B0" stroke-width="1.5"/>
+  <text x="450" y="258" font-size="12" font-weight="bold" fill="#9C27B0">spec</text>
+  <text x="450" y="272" font-size="11" fill="#666">Etat souhaité de la ressource</text>
+  <text x="450" y="282" font-size="10" fill="#999">Vous le définissez, le cluster le réalise</text>
+
+  <!-- status annotation -->
+  <rect x="435" y="300" width="340" height="45" rx="6" fill="white" stroke="#EE0000" stroke-width="1.5"/>
+  <line x1="385" y1="356" x2="430" y2="325" stroke="#EE0000" stroke-width="1.5"/>
+  <text x="450" y="318" font-size="12" font-weight="bold" fill="#EE0000">status</text>
+  <text x="450" y="332" font-size="11" fill="#666">Etat actuel (rempli par Kubernetes)</text>
+  <text x="450" y="342" font-size="10" fill="#999">Ne pas modifier manuellement</text>
+</svg>

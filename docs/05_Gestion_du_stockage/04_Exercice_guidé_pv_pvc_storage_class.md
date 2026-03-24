@@ -1,18 +1,49 @@
 # Exercice Guidé : Persistent Volumes (PV), PVC et Storage Class
 
-## Objectif
+## Objectifs
 
-Démontrer la différence entre le stockage **éphémère** (`emptyDir`) et le stockage **persistant** (PVC) en observant ce qui se passe avec les données après un redémarrage de pod.
+A la fin de cet exercice, vous serez capable de :
+
+- [ ] Comprendre la différence entre le stockage **éphémère** (`emptyDir`) et le stockage **persistant** (PVC)
+- [ ] Observer concrètement la **perte de données** causée par un volume `emptyDir`
+- [ ] Créer un **PersistentVolumeClaim** (PVC) pour demander du stockage persistant
+- [ ] Modifier un déploiement pour **remplacer** un volume éphémère par un PVC
+- [ ] Vérifier que les données **survivent** à la suppression d'un pod
+- [ ] Inspecter les **Storage Classes** disponibles dans le cluster
+
+## Ce que vous allez apprendre
+
+Dans cet exercice, vous allez travailler avec une application **Todo App** connectée à une base de données **PostgreSQL**. Au départ, PostgreSQL utilise un volume éphémère (`emptyDir`) : cela signifie que les données sont **perdues** à chaque fois que le pod est supprimé ou redémarré. Vous allez constater ce problème par vous-même, puis le résoudre en passant à un stockage persistant grâce à un **PVC** (PersistentVolumeClaim). Enfin, vous vérifierez que vos données survivent désormais aux redémarrages.
+
+Le schéma ci-dessous illustre la différence fondamentale entre ces deux approches :
+
+![Éphémère vs Persistant](./images/emptydir-vs-pvc.svg)
+
+:::info Pourquoi cet exercice est important
+En production, une base de données qui perd ses données au moindre redémarrage serait catastrophique. Comprendre le stockage persistant est **indispensable** pour tout opérateur d'applications sur OpenShift ou Kubernetes.
+:::
+
+---
 
 ## Prérequis
 
-Une application **Todo App** connectée à PostgreSQL est déjà déployée dans votre namespace. L'application utilise actuellement un stockage éphémère (`emptyDir`).
+Une application **Todo App** connectée à PostgreSQL est **déjà déployée** dans votre namespace. L'application utilise actuellement un stockage éphémère (`emptyDir`).
 
-Vérifiez les déploiements disponibles :
+:::note Ce qui est déjà en place
+- Un **Deployment** `todo-app` : l'interface web de la liste de tâches
+- Un **Deployment** `postgres` : la base de données PostgreSQL (image `registry.access.redhat.com/rhscl/postgresql-12-rhel7:latest`)
+- Un **Service** et une **Route** pour accéder à l'application
+- Un **Secret** `postgres-credentials` contenant les identifiants de la base de données
+- Le volume de PostgreSQL est configuré en `emptyDir` (stockage éphémère)
+:::
+
+Commencez par vérifier que les déploiements sont bien présents :
 
 ```bash
 oc get deployment
 ```
+
+**Sortie attendue :**
 
 ```
 NAME        READY   UP-TO-DATE   AVAILABLE   AGE
@@ -20,51 +51,135 @@ postgres    1/1     1            1           5m
 todo-app    1/1     1            1           5m
 ```
 
-Récupérez l'URL de la Todo App :
+Récupérez ensuite l'URL de la Todo App :
 
 ```bash
 oc get route todo-route -o jsonpath='https://{.spec.host}'
 ```
 
-Ouvrez l'URL dans votre navigateur et ajoutez quelques tâches à la liste.
+**Sortie attendue :**
+
+```
+https://todo-route-votre-namespace.apps.cluster.example.com
+```
+
+Ouvrez cette URL dans votre navigateur. Vous devriez voir l'interface de la Todo App.
+
+:::tip Premier test
+Ajoutez **2 ou 3 tâches** dans l'interface (par exemple : "Acheter du pain", "Lire la documentation OpenShift"). Vous en aurez besoin pour l'étape suivante.
+:::
 
 ---
 
-## Étape 1 : Observer la Perte de Données avec le Stockage Éphémère
+## Étape 1 : Observer la perte de données avec le stockage éphémère
 
-Vérifiez que PostgreSQL utilise bien `emptyDir` :
+### Pourquoi cette étape ?
+
+Avant de résoudre un problème, il faut le **voir** de ses propres yeux. Vous allez constater ce qui se passe quand une base de données utilise un volume `emptyDir` et que son pod est supprimé.
+
+### 1.1 — Vérifier le type de volume actuel
+
+Commencez par inspecter la configuration des volumes du déploiement PostgreSQL :
 
 ```bash
 oc get deployment postgres -o jsonpath='{.spec.template.spec.volumes}' | python3 -m json.tool
 ```
 
-Vous devriez voir `"emptyDir": {}` dans la configuration des volumes.
+**Sortie attendue :**
 
-Ajoutez quelques tâches dans l'interface web de la Todo App, puis redémarrez le pod PostgreSQL :
+```json
+[
+    {
+        "name": "postgres-storage",
+        "emptyDir": {}
+    }
+]
+```
+
+:::info Que signifie emptyDir ?
+Un volume `emptyDir` est un répertoire **vide** créé en même temps que le pod. Il existe uniquement **tant que le pod existe**. Dès que le pod est supprimé, le répertoire et tout son contenu sont **définitivement supprimés**.
+:::
+
+### 1.2 — Ajouter des tâches dans l'application
+
+Si ce n'est pas déjà fait, ouvrez la Todo App dans votre navigateur et ajoutez quelques tâches. Vous devriez voir quelque chose comme ceci :
+
+![Tâches ajoutées](./images/task-ephemere.png)
+
+### 1.3 — Supprimer le pod PostgreSQL
+
+Maintenant, supprimez le pod PostgreSQL pour simuler un redémarrage :
 
 ```bash
 oc delete pod -l app=postgres
 ```
 
-Kubernetes recrée automatiquement le pod. Attendez qu'il soit de nouveau Running :
+**Sortie attendue :**
+
+```
+pod "postgres-xxxxxxxxx-xxxxx" deleted
+```
+
+:::warning Que se passe-t-il en arrière-plan ?
+Quand vous supprimez un pod géré par un Deployment, Kubernetes en **recrée automatiquement un nouveau**. Mais le nouveau pod démarre avec un volume `emptyDir` **vide** — toutes les données de l'ancien pod sont perdues.
+:::
+
+Attendez que le nouveau pod soit prêt :
 
 ```bash
 oc get pods -l app=postgres -w
 ```
 
-Retournez sur l'interface de la Todo App et rafraîchissez la page. **Les tâches ont disparu** — c'est la limitation du stockage éphémère (`emptyDir`).
+**Sortie attendue :**
 
-:::warning Stockage éphémère
-Un volume `emptyDir` est créé vide à la création du pod et **détruit avec lui**. Toute donnée est perdue si le pod est supprimé ou redémarré.
+```
+NAME                        READY   STATUS    RESTARTS   AGE
+postgres-xxxxxxxxx-yyyyy    1/1     Running   0          15s
+```
+
+Appuyez sur `Ctrl+C` pour quitter le mode watch une fois que le pod est `Running`.
+
+### 1.4 — Constater la perte de données
+
+Retournez dans votre navigateur et **rafraîchissez la page** de la Todo App.
+
+![Tâches disparues](./images/task-ephemere-remove.png)
+
+**Les tâches ont disparu.** La base de données est vide car le nouveau pod a démarré avec un volume `emptyDir` vierge.
+
+:::warning Leçon importante
+Avec `emptyDir`, les données sont **éphémères**. Ce type de volume ne doit **jamais** être utilisé pour des données que vous souhaitez conserver (bases de données, fichiers utilisateurs, etc.).
 :::
+
+### Vérification de l'étape 1
+
+Avant de passer à la suite, assurez-vous que :
+
+- [x] Vous avez vérifié que le déploiement PostgreSQL utilise bien `emptyDir`
+- [x] Vous avez ajouté des tâches dans la Todo App
+- [x] Vous avez supprimé le pod PostgreSQL
+- [x] Vous avez constaté que les tâches ont **disparu** après le redémarrage
 
 ---
 
-## Étape 2 : Passer au Stockage Persistant avec un PVC
+## Étape 2 : Créer un PersistentVolumeClaim (PVC)
 
-Pour conserver les données même après un redémarrage de pod, nous allons modifier le déploiement PostgreSQL pour utiliser un *PersistentVolumeClaim* (PVC).
+### Pourquoi cette étape ?
 
-Créez d'abord le PVC. Créez un fichier `postgres-pvc.yaml` :
+Pour que les données survivent à la suppression d'un pod, nous avons besoin d'un **stockage indépendant du pod**. C'est exactement ce que fournit un **PersistentVolumeClaim** (PVC) : une demande de stockage persistant qui sera satisfaite par le cluster.
+
+![PV vs PVC vs StorageClass](./images/pv_vs_pvc_vs_storageclass.png)
+
+:::info Comment fonctionne le PVC ?
+1. Vous créez un **PVC** : c'est une **demande** de stockage (par exemple : "je veux 1 Go en lecture-écriture")
+2. Le cluster trouve ou crée un **PV** (Persistent Volume) qui correspond à cette demande
+3. Le PVC est **lié** (Bound) au PV
+4. Vous montez le PVC dans votre pod — le stockage persiste même si le pod est supprimé
+:::
+
+### 2.1 — Créer le fichier PVC
+
+Créez un fichier nommé `postgres-pvc.yaml` avec le contenu suivant :
 
 ```yaml
 apiVersion: v1
@@ -73,34 +188,66 @@ metadata:
   name: postgres-pvc
 spec:
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteOnce       # Un seul pod peut lire/écrire à la fois
   resources:
     requests:
-      storage: 1Gi
+      storage: 1Gi        # Nous demandons 1 Go de stockage
 ```
 
-Appliquez le PVC :
+:::tip Explication des champs
+- **`accessModes: ReadWriteOnce`** (RWO) : le volume peut être monté en lecture-écriture par **un seul noeud** à la fois. C'est le mode le plus courant pour les bases de données.
+- **`storage: 1Gi`** : la quantité de stockage demandée. Pour notre exercice, 1 Go est largement suffisant.
+- Nous ne spécifions pas de `storageClassName` : le cluster utilisera la **Storage Class par défaut**.
+:::
+
+### 2.2 — Appliquer le PVC
 
 ```bash
 oc apply -f postgres-pvc.yaml
 ```
 
-Vérifiez que le PVC est créé et lié à un volume :
+**Sortie attendue :**
+
+```
+persistentvolumeclaim/postgres-pvc created
+```
+
+### 2.3 — Vérifier que le PVC est lié
 
 ```bash
 oc get pvc postgres-pvc
 ```
 
+**Sortie attendue :**
+
 ```
-NAME           STATUS   VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   AGE
-postgres-pvc   Bound    ...      1Gi        RWO            ...            10s
+NAME           STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+postgres-pvc   Bound    pvc-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx   1Gi        RWO            thin-csi       10s
 ```
+
+:::warning Le statut doit être "Bound"
+Si le statut est `Pending` au lieu de `Bound`, cela signifie que le cluster n'a pas encore trouvé ou créé de PV correspondant. Attendez quelques secondes et relancez la commande. Si le statut reste `Pending`, demandez à votre formateur de vérifier la configuration du cluster.
+:::
+
+### Vérification de l'étape 2
+
+Avant de passer à la suite, assurez-vous que :
+
+- [x] Vous avez créé le fichier `postgres-pvc.yaml`
+- [x] Vous avez appliqué le PVC avec `oc apply`
+- [x] Le PVC est en statut **Bound**
 
 ---
 
-## Étape 3 : Modifier le Déploiement PostgreSQL
+## Étape 3 : Modifier le déploiement PostgreSQL pour utiliser le PVC
 
-Créez un fichier `postgres-pvc-deployment.yaml` pour utiliser le PVC :
+### Pourquoi cette étape ?
+
+Le PVC existe maintenant, mais PostgreSQL ne l'utilise pas encore. Nous devons modifier le déploiement pour **remplacer** le volume `emptyDir` par notre PVC.
+
+### 3.1 — Créer le fichier de déploiement modifié
+
+Créez un fichier `postgres-pvc-deployment.yaml` avec le contenu suivant :
 
 ```yaml
 apiVersion: apps/v1
@@ -119,8 +266,10 @@ spec:
     spec:
       volumes:
         - name: postgres-storage
-          persistentVolumeClaim:
-            claimName: postgres-pvc
+          # highlight-start
+          persistentVolumeClaim:      # Avant : emptyDir: {}
+            claimName: postgres-pvc   # Référence vers notre PVC
+          # highlight-end
       containers:
         - name: postgres
           image: registry.access.redhat.com/rhscl/postgresql-12-rhel7:latest
@@ -144,91 +293,316 @@ spec:
                   key: POSTGRES_DB
           volumeMounts:
             - name: postgres-storage
-              mountPath: /var/lib/pgsql/data
+              mountPath: /var/lib/pgsql/data   # Répertoire de données PostgreSQL
 ```
 
-Appliquez la mise à jour :
+:::info Qu'est-ce qui a changé ?
+La seule différence par rapport au déploiement initial est la section `volumes`. Au lieu de :
+```yaml
+volumes:
+  - name: postgres-storage
+    emptyDir: {}
+```
+Nous avons maintenant :
+```yaml
+volumes:
+  - name: postgres-storage
+    persistentVolumeClaim:
+      claimName: postgres-pvc
+```
+Tout le reste (container, ports, variables d'environnement, volumeMounts) est **identique**.
+:::
+
+### 3.2 — Appliquer le nouveau déploiement
 
 ```bash
 oc apply -f postgres-pvc-deployment.yaml
 ```
 
-Attendez que le pod redémarre avec le nouveau volume :
+**Sortie attendue :**
+
+```
+deployment.apps/postgres configured
+```
+
+:::note "configured" et non "created"
+Le message dit `configured` car le déploiement `postgres` existait déjà. Kubernetes a **mis à jour** la configuration existante au lieu d'en créer une nouvelle.
+:::
+
+### 3.3 — Attendre que le nouveau pod soit prêt
 
 ```bash
 oc rollout status deployment/postgres
 ```
 
+**Sortie attendue :**
+
+```
+deployment "postgres" successfully rolled out
+```
+
+Vérifiez que le pod est bien en cours d'exécution :
+
+```bash
+oc get pods -l app=postgres
+```
+
+**Sortie attendue :**
+
+```
+NAME                        READY   STATUS    RESTARTS   AGE
+postgres-xxxxxxxxx-zzzzz    1/1     Running   0          30s
+```
+
+### 3.4 — Vérifier que le PVC est bien utilisé
+
+```bash
+oc get deployment postgres -o jsonpath='{.spec.template.spec.volumes}' | python3 -m json.tool
+```
+
+**Sortie attendue :**
+
+```json
+[
+    {
+        "name": "postgres-storage",
+        "persistentVolumeClaim": {
+            "claimName": "postgres-pvc"
+        }
+    }
+]
+```
+
+:::tip Confirmé !
+Le volume `emptyDir` a bien été remplacé par un `persistentVolumeClaim`. PostgreSQL utilise maintenant un stockage persistant.
+:::
+
+### Vérification de l'étape 3
+
+Avant de passer à la suite, assurez-vous que :
+
+- [x] Vous avez créé le fichier `postgres-pvc-deployment.yaml`
+- [x] Le déploiement a été mis à jour (`configured`)
+- [x] Le rollout est terminé avec succès
+- [x] Le volume est désormais un `persistentVolumeClaim` (et non plus `emptyDir`)
+
 ---
 
-## Étape 4 : Tester la Persistance des Données
+## Étape 4 : Tester la persistance des données
 
-1. Ajoutez de nouvelles tâches dans l'interface de la Todo App.
+### Pourquoi cette étape ?
 
-2. Redémarrez le pod PostgreSQL :
+C'est le moment de vérité. Nous allons reproduire exactement le même scénario que l'étape 1 (ajouter des tâches, supprimer le pod) et vérifier que cette fois-ci, **les données sont conservées**.
+
+### 4.1 — Ajouter de nouvelles tâches
+
+Ouvrez la Todo App dans votre navigateur et ajoutez de nouvelles tâches (par exemple : "Apprendre les PVC", "Maîtriser OpenShift").
+
+![Tâches ajoutées avec PVC](./images/task-permanente.png)
+
+### 4.2 — Supprimer le pod PostgreSQL
+
+Comme à l'étape 1, supprimez le pod :
 
 ```bash
 oc delete pod -l app=postgres
 ```
 
-3. Attendez que le pod soit de nouveau Running :
+**Sortie attendue :**
+
+```
+pod "postgres-xxxxxxxxx-zzzzz" deleted
+```
+
+### 4.3 — Attendre la recréation du pod
 
 ```bash
 oc get pods -l app=postgres -w
 ```
 
-4. Rafraîchissez la page de la Todo App. **Les tâches sont toujours présentes !**
+**Sortie attendue :**
 
-:::tip Stockage persistant
-Le PVC survit à la suppression du pod. Lorsque Kubernetes recrée le pod, il remonte le même volume avec les données intactes.
+```
+NAME                        READY   STATUS    RESTARTS   AGE
+postgres-xxxxxxxxx-aaaaa    1/1     Running   0          10s
+```
+
+Appuyez sur `Ctrl+C` pour quitter le mode watch.
+
+### 4.4 — Vérifier que les données sont toujours là
+
+Retournez dans votre navigateur et **rafraîchissez la page**.
+
+**Les tâches sont toujours présentes !**
+
+:::tip Succès !
+Contrairement à l'étape 1, les données ont survécu à la suppression du pod. Le PVC a conservé les données de PostgreSQL de manière **indépendante** du cycle de vie du pod.
 :::
+
+### Vérification de l'étape 4
+
+Avant de passer à la suite, assurez-vous que :
+
+- [x] Vous avez ajouté des tâches dans la Todo App
+- [x] Vous avez supprimé le pod PostgreSQL
+- [x] Après le redémarrage, les tâches sont **toujours présentes**
 
 ---
 
 ## Étape 5 : Inspecter le PVC et la Storage Class
 
-Affichez les détails du PVC :
+### Pourquoi cette étape ?
+
+Maintenant que le PVC fonctionne, prenons un moment pour comprendre **comment** le cluster a satisfait notre demande de stockage.
+
+### 5.1 — Détails du PVC
 
 ```bash
 oc describe pvc postgres-pvc
 ```
 
+**Sortie attendue (extraits importants) :**
+
 ```
 Name:          postgres-pvc
-Namespace:     prague-user-ns
+Namespace:     votre-namespace
 Status:        Bound
-Volume:        pvc-xxx-yyy
+Volume:        pvc-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 Capacity:      1Gi
 Access Modes:  RWO
 StorageClass:  thin-csi
-...
+Events:
+  Type    Reason                 Age   From                         Message
+  ----    ------                 ----  ----                         -------
+  Normal  ProvisioningSucceeded  10m   persistentvolume-controller  Successfully provisioned volume ...
 ```
 
-Affichez les Storage Classes disponibles dans le cluster :
+:::info Lecture des détails
+- **Status: Bound** — Le PVC est lié à un PV, tout va bien
+- **Volume** — L'identifiant du PV qui a été créé automatiquement
+- **Capacity: 1Gi** — Le stockage alloué correspond à notre demande
+- **Access Modes: RWO** — ReadWriteOnce, comme demandé
+- **StorageClass: thin-csi** — La classe de stockage utilisée (celle par défaut du cluster)
+:::
+
+### 5.2 — Lister les Storage Classes
 
 ```bash
 oc get storageclass
 ```
 
-La Storage Class `(default)` est utilisée automatiquement si vous ne spécifiez pas de `storageClassName` dans votre PVC.
+**Sortie attendue :**
+
+```
+NAME                 PROVISIONER                    RECLAIMPOLICY   VOLUMEBINDINGMODE   ALLOWVOLUMEEXPANSION   AGE
+thin-csi (default)   csi.vsphere.vmware.com         Delete          Immediate           true                   90d
+```
+
+:::note Storage Class par défaut
+La Storage Class marquée `(default)` est utilisée automatiquement quand vous ne spécifiez pas de `storageClassName` dans votre PVC. C'est pour cela que notre PVC a fonctionné sans préciser de classe de stockage.
+:::
+
+### 5.3 — Voir le PV associé
+
+```bash
+oc get pv | grep postgres-pvc
+```
+
+**Sortie attendue :**
+
+```
+pvc-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx   1Gi   RWO   Delete   Bound   votre-namespace/postgres-pvc   thin-csi   10m
+```
+
+:::info Approvisionnement dynamique
+Le PV a été créé **automatiquement** par la Storage Class. C'est ce qu'on appelle l'**approvisionnement dynamique** (dynamic provisioning). Vous n'avez pas eu besoin de demander à un administrateur de créer un PV manuellement — la Storage Class s'en est chargée.
+:::
+
+### Vérification de l'étape 5
+
+Avant de passer à la suite, assurez-vous que :
+
+- [x] Vous avez inspecté les détails du PVC avec `oc describe`
+- [x] Vous avez identifié la Storage Class par défaut du cluster
+- [x] Vous comprenez le lien entre PVC, PV et Storage Class
 
 ---
 
 ## Étape 6 : Nettoyage
 
-Supprimez les ressources créées pendant cet exercice :
+### Pourquoi cette étape ?
+
+Il est important de nettoyer les ressources créées pendant l'exercice pour ne pas laisser de stockage inutilisé dans le cluster.
+
+Supprimez le déploiement modifié et le PVC :
 
 ```bash
 oc delete -f postgres-pvc-deployment.yaml
+```
+
+**Sortie attendue :**
+
+```
+deployment.apps "postgres" deleted
+```
+
+```bash
 oc delete pvc postgres-pvc
+```
+
+**Sortie attendue :**
+
+```
+persistentvolumeclaim "postgres-pvc" deleted
+```
+
+:::warning Suppression du PVC
+Quand vous supprimez un PVC dont la politique de récupération (Reclaim Policy) est `Delete`, le PV associé et les données qu'il contient sont **supprimés définitivement**. En production, assurez-vous toujours d'avoir une sauvegarde avant de supprimer un PVC.
+:::
+
+Vérifiez que tout a bien été nettoyé :
+
+```bash
+oc get pvc
+```
+
+**Sortie attendue :**
+
+```
+No resources found in votre-namespace namespace.
 ```
 
 ---
 
+## Récapitulatif
+
+Voici un tableau résumant les différences que vous avez observées :
+
+| Critère | `emptyDir` (éphémère) | PVC (persistant) |
+|---|---|---|
+| **Durée de vie** | Liée au pod | Indépendante du pod |
+| **Données après suppression du pod** | Perdues | Conservées |
+| **Cas d'usage** | Cache, fichiers temporaires | Bases de données, fichiers utilisateurs |
+| **Création** | Automatique avec le pod | Manuelle (fichier YAML) |
+| **Taille** | Limitée par le noeud | Définie dans le PVC |
+| **Résultat dans l'exercice** | Tâches disparues | Tâches conservées |
+
+:::tip A retenir
+- **`emptyDir`** = stockage temporaire, détruit avec le pod
+- **PVC** = demande de stockage persistant, survit à la suppression du pod
+- **PV** = le stockage réel fourni par le cluster
+- **Storage Class** = le "type" de stockage disponible, permet l'approvisionnement dynamique
+- En production, toute application **stateful** (base de données, file d'attente, etc.) doit utiliser un **PVC**
+:::
+
 ## Conclusion
 
-Vous avez démontré concrètement la différence entre :
-- **`emptyDir`** : stockage temporaire, perdu à la suppression du pod
-- **PVC** : stockage persistant, survit à la suppression du pod et permet aux applications stateful de conserver leurs données
+Vous avez réalisé les étapes suivantes :
 
-En production, les bases de données et toute application stateful doivent toujours utiliser des PVCs pour garantir la durabilité des données.
+1. **Constaté le problème** : avec `emptyDir`, les données PostgreSQL sont perdues à chaque redémarrage de pod
+2. **Créé un PVC** : une demande de 1 Go de stockage persistant
+3. **Modifié le déploiement** : remplacement du volume `emptyDir` par le PVC
+4. **Vérifié la solution** : les données survivent maintenant à la suppression du pod
+5. **Exploré l'infrastructure** : compréhension du lien entre PVC, PV et Storage Class
+
+Vous maîtrisez maintenant les bases du stockage persistant dans OpenShift. Cette compétence est essentielle pour déployer des applications de production qui nécessitent la durabilité des données.
