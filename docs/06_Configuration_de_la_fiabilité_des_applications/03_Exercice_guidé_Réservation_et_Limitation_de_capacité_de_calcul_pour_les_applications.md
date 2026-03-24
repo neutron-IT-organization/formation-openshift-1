@@ -1,205 +1,214 @@
 # Exercice Guidé : Gestion des Requests, Limites et Quotas dans OpenShift
 
-Cet exercice vous guidera dans la configuration et la gestion des **requests**, **limites** et **quotas** pour un déploiement dans un projet OpenShift. Vous apprendrez à configurer ces paramètres, à tester les limites et à observer l'utilisation réelle des ressources par rapport aux quotas définis.
+Cet exercice vous guidera dans la configuration des *requests* et *limites* de ressources pour un déploiement, puis dans la création et le test d'un *ResourceQuota*.
 
+## Objectifs de l'exercice
 
-## **Objectifs de l'exercice**
+1. Configurer les *requests* et *limites* pour un déploiement.
+2. Créer un *ResourceQuota* pour restreindre la consommation globale du namespace.
+3. Observer le comportement d'OpenShift lorsque le quota est dépassé.
+4. Analyser les consommations via les quotas (**used** vs **hard**).
 
-1. Configurer les **requests** et **limites** pour un déploiement dans OpenShift.  
-2. Définir un **quota de ressources** pour restreindre la consommation globale des ressources.  
-3. Tester le comportement d'OpenShift lorsque le quota est atteint en essayant de scaler un déploiement.  
-4. Analyser les consommations via les quotas en observant les statuts des ressources consommées (**used** vs **hard**).  
+---
 
+## Étape 1 : Créer un Déploiement avec Requests et Limites
 
-## **Étape 1 : Créer un Déploiement avec Requests et Limites**
+Créez un fichier nommé `deployment-limite.yaml` :
 
-1. Créez un fichier nommé `deployment-limite.yaml` avec la configuration suivante :  
-
-   ```yaml
-   apiVersion: apps/v1
-   kind: Deployment
-   metadata:
-     name: test-limite
-     namespace: YOURCITY-user-ns
-   spec:
-     replicas: 1
-     selector:
-       matchLabels:
-         app: test-limite
-     template:
-       metadata:
-         labels:
-           app: test-limite
-       spec:
-         containers:
-         - name: limite-container
-           image: registry.redhat.io/ubi8/ubi:latest
-           command: ["sh", "-c", "while true; do echo Hello OpenShift; sleep 5; done"]
-           resources:
-             requests:
-               memory: "128Mi"
-               cpu: "250m"
-             limits:
-               memory: "256Mi"
-               cpu: "500m"
-   ```
-
-   **Explications** :  
-   - **Image utilisée** : `registry.redhat.io/ubi8/ubi:latest` (catalogue Red Hat).  
-   - Requests et limites configurées :  
-     - CPU : **250m** à **500m**  
-     - Mémoire : **128Mi** à **256Mi**
-
-2. Appliquez le déploiement :  
-
-   ```bash
-   oc apply -f deployment-limite.yaml -n YOURCITY-user-ns
-   ```
-
-3. Vérifiez que le déploiement a été créé et que le pod est en cours d’exécution :  
-
-   ```bash
-   oc get pods -n YOURCITY-user-ns
-   ```
-
-4. Consultez les **requests** et **limites** appliquées au pod avec :  
-
-   ```bash
-   oc describe pod -l app=test-limite -n YOURCITY-user-ns
-   ```
-
-
-## **Étape 2 : Configurer un Quota de Ressources**
-
-1. Créez un fichier `quota.yaml` pour définir un quota de ressources :  
-
-   ```yaml
-   apiVersion: v1
-   kind: ResourceQuota
-   metadata:
-     name: quota-cpu-memoire
-     namespace: YOURCITY-user-ns
-   spec:
-     hard:
-       requests.cpu: "1"            # Limite totale des demandes CPU à 1 CPU
-       requests.memory: "512Mi"     # Limite totale des demandes mémoire à 512 Mi
-       limits.cpu: "2"              # Limite totale des limites CPU à 2 CPU
-       limits.memory: "1Gi"         # Limite totale des limites mémoire à 1 Gi
-   ```
-
-2. Appliquez le quota :  
-
-   ```bash
-   oc apply -f quota.yaml -n YOURCITY-user-ns
-   ```
-
-3. Vérifiez que le quota est bien configuré :  
-
-   ```bash
-   oc describe resourcequota quota-cpu-memoire -n YOURCITY-user-ns
-   ```
-
-
-## **Étape 3 : Tester le Dépassement du Quota**
-
-1. Essayez de scaler le déploiement au-delà des quotas. Modifiez le nombre de répliques avec :  
-
-   ```bash
-   oc scale deployment/test-limite --replicas=4 -n YOURCITY-user-ns
-   ```
-
-2. Observez les événements pour comprendre pourquoi OpenShift refuse de scaler :  
-
-   ```bash
-   oc get events -n YOURCITY-user-ns
-   ```
-
-Voici les détails ajoutés à l'étape 3 pour expliquer ce que vous êtes censé observer dans les événements lorsque le quota est dépassé :  
-
-
-## **Étape 3 : Tester le Dépassement du Quota**
-
-1. Essayez de scaler le déploiement pour augmenter le nombre de répliques :  
-
-   ```bash
-   oc scale deployment/test-limite --replicas=4 -n YOURCITY-user-ns
-   ```
-
-2. Vérifiez les événements générés par OpenShift :  
-
-   ```bash
-   oc get events -n YOURCITY-user-ns
-   ```
-
-   ### **Ce que vous devriez observer :**
-   - Un événement indiquant que le quota est atteint.  
-   - Exemple de message typique dans les événements :  
-
-     ```
-     Warning  FailedCreate  1m  replicaset-controller  Failed to create pod: exceeded quota: quota-cpu-memoire, requested: requests.cpu=500m, used: requests.cpu=1, limited: requests.cpu=1
-     ```
-
-     **Décryptage du message :**  
-     - **`FailedCreate`** : OpenShift n’a pas pu créer de nouveaux pods.  
-     - **`exceeded quota: quota-cpu-memoire`** : Le quota nommé `quota-cpu-memoire` a été dépassé.  
-     - **`requested: requests.cpu=500m`** : Le déploiement a tenté de demander 500 millicores supplémentaires pour une nouvelle réplique.  
-     - **`used: requests.cpu=1`** : Les ressources CPU actuellement utilisées dans le namespace sont déjà au maximum de 1 CPU.  
-     - **`limited: requests.cpu=1`** : Le quota autorise au maximum 1 CPU pour les demandes (requests).  
-     
-
-Avec cette explication, les utilisateurs sauront interpréter les messages des événements et comprendre pourquoi le quota empêche la montée en charge du déploiement.
-
-3. Retournez au déploiement d’une réplique pour éviter les problèmes persistants :  
-
-   ```bash
-   oc scale deployment/test-limite --replicas=8 -n YOURCITY-user-ns
-   ``
-
-
-## **Étape 4 : Analyser les Consommations des Quotas**
-
-1. Vérifiez les consommations actuelles des quotas avec :  
-
-   ```bash
-   oc describe resourcequota quota-cpu-memoire -n YOURCITY-user-ns
-   ```
-
-   **Analyse des résultats** :  
-   - **Used** : Les ressources actuellement consommées dans le namespace.  
-   - **Hard** : Les limites totales définies par le quota.  
-
-   Par exemple :  
-
-   ```
-   Resource              Used   Hard
-   --------              ----   ----
-   requests.cpu          500m   1
-   requests.memory       256Mi  512Mi
-   limits.cpu            1      2
-   limits.memory         512Mi  1Gi
-   ```
-
-2. Pour surveiller les ressources consommées par chaque pod :  
-
-   ```bash
-   oc adm top pod -n YOURCITY-user-ns
-   ```
-
-## **Étape 5 : Nettoyer l'Environnement**
-
-Pour supprimer les ressources créées :  
-
-```bash
-oc delete deployment test-limite -n YOURCITY-user-ns
-oc delete resourcequota quota-cpu-memoire -n YOURCITY-user-ns
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-limite
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-limite
+  template:
+    metadata:
+      labels:
+        app: test-limite
+    spec:
+      containers:
+      - name: limite-container
+        image: registry.access.redhat.com/ubi8/ubi:latest
+        command: ["sh", "-c", "while true; do echo Hello OpenShift; sleep 5; done"]
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "300m"
+          limits:
+            memory: "256Mi"
+            cpu: "600m"
 ```
 
+Appliquez le déploiement :
 
-## **Conclusion**
+```bash
+oc apply -f deployment-limite.yaml
+```
 
-Dans cet exercice, vous avez appris à :  
-1. Configurer les requests et limites pour un déploiement.  
-2. Définir et appliquer des quotas pour contrôler la consommation globale des ressources.  
-3. Tester les quotas en scalant un déploiement et analyser les statuts avec `oc get quotas`.  
+Vérifiez que le pod est Running :
 
-**Astuce** : En production, surveillez toujours les sections **used** et **hard** des quotas pour garantir une gestion optimale des ressources dans vos projets OpenShift.
+```bash
+oc get pods -l app=test-limite
+```
+
+Consultez les *requests* et *limites* appliquées au pod :
+
+```bash
+oc describe pod -l app=test-limite | grep -A 6 "Limits:"
+```
+
+---
+
+## Étape 2 : Configurer un ResourceQuota
+
+Créez un fichier `quota.yaml` pour définir un quota de ressources dans votre namespace :
+
+```yaml
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: quota-formation
+spec:
+  hard:
+    requests.cpu: "900m"       # Max 900 millicores en requests (3 pods × 300m)
+    requests.memory: "512Mi"   # Max 512 Mi en requests
+    limits.cpu: "2"            # Max 2 CPU en limits
+    limits.memory: "1Gi"       # Max 1 Gi en limits
+    pods: "5"                  # Max 5 pods
+```
+
+:::info Calcul du quota
+Avec 1 pod existant (300m CPU request) et un quota de 900m :
+- 1 pod : 300m utilisés (33% du quota)
+- 2 pods : 600m utilisés (67% du quota)
+- 3 pods : 900m utilisés (100% du quota — limite atteinte)
+- 4 pods : 1200m nécessaires → **REFUSÉ** (dépasse 900m)
+:::
+
+Appliquez le quota :
+
+```bash
+oc apply -f quota.yaml
+```
+
+Vérifiez que le quota est bien configuré :
+
+```bash
+oc describe resourcequota quota-formation
+```
+
+```
+Name:              quota-formation
+Namespace:         prague-user-ns
+Resource           Used    Hard
+--------           ----    ----
+limits.cpu         600m    2
+limits.memory      256Mi   1Gi
+pods               1       5
+requests.cpu       300m    900m
+requests.memory    128Mi   512Mi
+```
+
+---
+
+## Étape 3 : Tester le Dépassement du Quota
+
+Essayez de scaler le déploiement au-delà du quota :
+
+```bash
+oc scale deployment/test-limite --replicas=4
+```
+
+Vérifiez les événements pour comprendre pourquoi OpenShift refuse de créer les pods supplémentaires :
+
+```bash
+oc get events --sort-by='.lastTimestamp' | tail -5
+```
+
+Vous devriez voir un événement similaire à :
+
+```
+Warning  FailedCreate  replicaset-controller  Failed to create pod: exceeded quota: quota-formation,
+requested: requests.cpu=300m, used: requests.cpu=900m, limited: requests.cpu=900m
+```
+
+**Décryptage du message :**
+- `FailedCreate` : OpenShift n'a pas pu créer de nouveaux pods
+- `exceeded quota: quota-formation` : le quota `quota-formation` a été dépassé
+- `requested: requests.cpu=300m` : le 4ème pod demande 300m CPU supplémentaires
+- `used: requests.cpu=900m` : les 3 pods existants utilisent déjà les 900m autorisés
+- `limited: requests.cpu=900m` : la limite du quota est 900m
+
+Vérifiez l'état réel des pods :
+
+```bash
+oc get pods -l app=test-limite
+```
+
+```
+NAME                           READY   STATUS    RESTARTS   AGE
+test-limite-xxx-yyy1           1/1     Running   0          5m
+test-limite-xxx-yyy2           1/1     Running   0          1m
+test-limite-xxx-yyy3           1/1     Running   0          30s
+```
+
+Seulement 3 pods sont Running (la limite du quota est 900m = 3 × 300m).
+
+---
+
+## Étape 4 : Analyser les Consommations des Quotas
+
+Consultez l'état détaillé du quota :
+
+```bash
+oc describe resourcequota quota-formation
+```
+
+```
+Name:              quota-formation
+Namespace:         prague-user-ns
+Resource           Used    Hard
+--------           ----    ----
+limits.cpu         1800m   2
+limits.memory      768Mi   1Gi
+pods               3       5
+requests.cpu       900m    900m
+requests.memory    384Mi   512Mi
+```
+
+Pour surveiller les ressources consommées par chaque pod :
+
+```bash
+oc adm top pod -l app=test-limite
+```
+
+---
+
+## Étape 5 : Nettoyer l'Environnement
+
+```bash
+oc delete deployment test-limite
+oc delete resourcequota quota-formation
+```
+
+Vérifiez que les ressources sont supprimées :
+
+```bash
+oc get deployment,resourcequota
+```
+
+---
+
+## Conclusion
+
+Vous avez appris à :
+1. Configurer les *requests* et *limites* pour contrôler la consommation par pod
+2. Définir des *ResourceQuotas* pour limiter la consommation globale d'un namespace
+3. Observer et interpréter les erreurs de dépassement de quota
+4. Analyser les consommations actuelles vs les limites
+
+**Bonne pratique production** : En production, définissez toujours des quotas sur vos namespaces et configurez des *requests*/*limits* sur tous vos conteneurs pour éviter qu'une application ne consomme toutes les ressources du cluster.

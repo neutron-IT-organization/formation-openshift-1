@@ -1,221 +1,106 @@
-# Exercice Guidé sur les PVC, PV et Storage Class
+# Exercice Guidé : Persistent Volumes (PV), PVC et Storage Class
 
-### Objectif
+## Objectif
 
-L'objectif de cet exercice est de démontrer comment utiliser des Persistent Volume Claims (PVC) et Persistent Volumes (PV) avec une Storage Class pour assurer la persistance des données d'une application, même après la suppression de pods.
+Démontrer la différence entre le stockage **éphémère** (`emptyDir`) et le stockage **persistant** (PVC) en observant ce qui se passe avec les données après un redémarrage de pod.
 
-### Étapes de l'Exercice
+## Prérequis
 
-#### Étape 1 : Déployer PostgreSQL avec un stockage éphémère
+Une application **Todo App** connectée à PostgreSQL est déjà déployée dans votre namespace. L'application utilise actuellement un stockage éphémère (`emptyDir`).
 
-1. **Créez le déploiement PostgreSQL en utilisant `emptyDir`.**
-
-Créez un fichier YAML nommé `postgres-emptydir-deployment.yaml` contenant le manifeste suivant :
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: postgres
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: postgres
-  template:
-    metadata:
-      labels:
-        app: postgres
-    spec:
-      volumes:
-        - name: postgres-storage
-          emptyDir: {} # Utilisation de emptyDir pour le stockage temporaire
-      containers:
-        - name: postgres
-          image: registry.redhat.io/rhel8/postgresql-12:latest
-          ports:
-            - containerPort: 5432
-          env:
-            - name: POSTGRESQL_USER
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-credentials
-                  key: POSTGRES_USER
-            - name: POSTGRESQL_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-credentials
-                  key: POSTGRES_PASSWORD
-            - name: POSTGRESQL_DATABASE
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-credentials
-                  key: POSTGRES_DB
-            - name: POSTGRESQL_PORT
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-credentials
-                  key: POSTGRES_PORT
-          volumeMounts:
-            - name: postgres-storage
-              mountPath: /var/lib/pgsql/data
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: postgres-service
-spec:
-  selector:
-    app: postgres
-  ports:
-    - name: postgres
-      port: 5432
-      targetPort: 5432
-  type: ClusterIP
----
-apiVersion: v1
-data:
-  POSTGRES_DB: dGFzaw==
-  POSTGRES_PASSWORD: bXlzZWNyZXRwYXNzd29yZA==
-  POSTGRES_PORT: NTQzMg==
-  POSTGRES_USER: dGFzay11c2Vy
-kind: Secret
-metadata:
-  name: postgres-credentials
-type: Opaque
-```
-
-2. **Appliquez le déploiement :**
+Vérifiez les déploiements disponibles :
 
 ```bash
-oc apply -f postgres-emptydir-deployment.yaml
+oc get deployment
 ```
 
-#### Étape 2 : Déployer l'Application Todo
-
-1. **Créez le déploiement pour l'application Todo.**
-
-Créez un fichier YAML nommé `todo-app.yaml` :
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: todo-app
-  labels:
-    app: todo-app
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: todo-app
-  template:
-    metadata:
-      labels:
-        app: todo-app
-    spec:
-      containers:
-        - name: todo-app
-          image: quay.io/neutron-it/todoapp:v4
-          ports:
-            - containerPort: 8080
-          env:
-            - name: NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
-            - name: POSTGRESQL_USER
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-credentials
-                  key: POSTGRES_USER
-            - name: POSTGRESQL_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-credentials
-                  key: POSTGRES_PASSWORD
-            - name: POSTGRESQL_DATABASE
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-credentials
-                  key: POSTGRES_DB
-            - name: POSTGRESQL_PORT
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-credentials
-                  key: POSTGRES_PORT
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: todo-app-service
-spec:
-  selector:
-    app: todo-app
-  ports:
-    - name: todo-app
-      port: 8080
-      targetPort: 8080
-  type: ClusterIP
----
-apiVersion: route.openshift.io/v1
-kind: Route
-metadata:
-  name: todo-route
-spec:
-  to:
-    kind: Service
-    name: todo-app-service
-    weight: 100
-  port:
-    targetPort: 8080
-  tls:
-    termination: edge
+```
+NAME        READY   UP-TO-DATE   AVAILABLE   AGE
+postgres    1/1     1            1           5m
+todo-app    1/1     1            1           5m
 ```
 
-2. **Appliquez le déploiement :**
+Récupérez l'URL de la Todo App :
 
 ```bash
-oc apply -f todo-app.yaml
+oc get route todo-route -o jsonpath='https://{.spec.host}'
 ```
 
-3. **Récupérez la route pour accéder à l'application Todo :**
+Ouvrez l'URL dans votre navigateur et ajoutez quelques tâches à la liste.
 
-Utilisez la commande suivante :
+---
+
+## Étape 1 : Observer la Perte de Données avec le Stockage Éphémère
+
+Vérifiez que PostgreSQL utilise bien `emptyDir` :
 
 ```bash
-oc get route
+oc get deployment postgres -o jsonpath='{.spec.template.spec.volumes}' | python3 -m json.tool
 ```
 
-Notez l'URL fournie et accédez-y depuis votre navigateur. Ajoutez quelques tâches à votre liste de tâches.
+Vous devriez voir `"emptyDir": {}` dans la configuration des volumes.
 
-![task ephemere](./images/task-ephemere.png)
-
-#### Étape 3 : Tester la Persistance des Données
-
-1. **Redémarrez le déploiement PostgreSQL.**
-
-Supprimez le pod PostgreSQL pour observer le comportement du stockage éphémère :
+Ajoutez quelques tâches dans l'interface web de la Todo App, puis redémarrez le pod PostgreSQL :
 
 ```bash
 oc delete pod -l app=postgres
 ```
 
-Kubernetes recréera le pod automatiquement grâce au déploiement.
+Kubernetes recrée automatiquement le pod. Attendez qu'il soit de nouveau Running :
 
-2. **Vérifiez l'Application Todo.**
+```bash
+oc get pods -l app=postgres -w
+```
 
-Rendez-vous à nouveau sur l'interface de votre application Todo et faite un refresh de la page. Vous devriez voir que les tâches que vous avez ajoutées précédemment ont disparu, car les données étaient stockées dans un volume éphémère (`emptyDir`), qui est supprimé avec le pod.
+Retournez sur l'interface de la Todo App et rafraîchissez la page. **Les tâches ont disparu** — c'est la limitation du stockage éphémère (`emptyDir`).
 
-![task ephemere](./images/task-ephemere-remove.png)
+:::warning Stockage éphémère
+Un volume `emptyDir` est créé vide à la création du pod et **détruit avec lui**. Toute donnée est perdue si le pod est supprimé ou redémarré.
+:::
 
-### Transition vers un Stockage Persistant
+---
 
-Pour éviter que le contenu persistant disparaisse lorsque vous modifiez l'image de votre pod, nous allons ajouter du stockage persistant avec des PV et des PVC.
+## Étape 2 : Passer au Stockage Persistant avec un PVC
 
-1. **Modifiez le manifeste du déploiement PostgreSQL pour utiliser un PVC.**
+Pour conserver les données même après un redémarrage de pod, nous allons modifier le déploiement PostgreSQL pour utiliser un *PersistentVolumeClaim* (PVC).
 
-Voici le manifeste mis à jour pour le déploiement PostgreSQL :
+Créez d'abord le PVC. Créez un fichier `postgres-pvc.yaml` :
+
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+```
+
+Appliquez le PVC :
+
+```bash
+oc apply -f postgres-pvc.yaml
+```
+
+Vérifiez que le PVC est créé et lié à un volume :
+
+```bash
+oc get pvc postgres-pvc
+```
+
+```
+NAME           STATUS   VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+postgres-pvc   Bound    ...      1Gi        RWO            ...            10s
+```
+
+---
+
+## Étape 3 : Modifier le Déploiement PostgreSQL
+
+Créez un fichier `postgres-pvc-deployment.yaml` pour utiliser le PVC :
 
 ```yaml
 apiVersion: apps/v1
@@ -238,7 +123,7 @@ spec:
             claimName: postgres-pvc
       containers:
         - name: postgres
-          image: registry.redhat.io/rhel8/postgresql-12:latest
+          image: registry.access.redhat.com/rhscl/postgresql-12-rhel7:latest
           ports:
             - containerPort: 5432
           env:
@@ -257,58 +142,93 @@ spec:
                 secretKeyRef:
                   name: postgres-credentials
                   key: POSTGRES_DB
-            - name: POSTGRESQL_PORT
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-credentials
-                  key: POSTGRES_PORT
           volumeMounts:
             - name: postgres-storage
               mountPath: /var/lib/pgsql/data
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: postgres-pvc
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 10Gi
 ```
 
-2. **Appliquez les modifications.**
-
-Appliquez le nouveau déploiement :
+Appliquez la mise à jour :
 
 ```bash
 oc apply -f postgres-pvc-deployment.yaml
-oc delete pod -l app=todo-app
 ```
 
-#### Test de Création de Tâches avec Stockage Persistant
+Attendez que le pod redémarre avec le nouveau volume :
 
-1. **Vérifiez l'Application Todo.**
+```bash
+oc rollout status deployment/postgres
+```
 
-Accédez à l'interface de l'application Todo via l'URL que vous avez récupérée précédemment. Ajoutez de nouvelles tâches à votre liste.
+---
 
-![task permanente](./images/task-permanente.png)
+## Étape 4 : Tester la Persistance des Données
 
-2. **Testez le comportement après le redémarrage du pod.**
+1. Ajoutez de nouvelles tâches dans l'interface de la Todo App.
 
-Après avoir ajouté quelques tâches, répétez le processus de redémarrage du pod PostgreSQL :
+2. Redémarrez le pod PostgreSQL :
 
 ```bash
 oc delete pod -l app=postgres
 ```
 
-Kubernetes va recréer le pod automatiquement.
+3. Attendez que le pod soit de nouveau Running :
 
-3. **Vérifiez à nouveau l'interface de l'application Todo.**
+```bash
+oc get pods -l app=postgres -w
+```
 
-Vous devriez maintenant constater que les tâches que vous avez ajoutées précédemment sont toujours présentes avec votre refresh de la page. Cela s'explique par le fait que les données sont maintenant stockées dans un volume persistant via un Persistent Volume Claim (PVC), ce qui permet de préserver les données même après la suppression des pods.
+4. Rafraîchissez la page de la Todo App. **Les tâches sont toujours présentes !**
 
-### Conclusion
+:::tip Stockage persistant
+Le PVC survit à la suppression du pod. Lorsque Kubernetes recrée le pod, il remonte le même volume avec les données intactes.
+:::
 
-Dans cette section, nous avons réalisé un exercice pratique sur l'utilisation des Persistent Volume Claims (PVC), des Persistent Volumes (PV) et des Storage Classes dans Kubernetes.
+---
+
+## Étape 5 : Inspecter le PVC et la Storage Class
+
+Affichez les détails du PVC :
+
+```bash
+oc describe pvc postgres-pvc
+```
+
+```
+Name:          postgres-pvc
+Namespace:     prague-user-ns
+Status:        Bound
+Volume:        pvc-xxx-yyy
+Capacity:      1Gi
+Access Modes:  RWO
+StorageClass:  thin-csi
+...
+```
+
+Affichez les Storage Classes disponibles dans le cluster :
+
+```bash
+oc get storageclass
+```
+
+La Storage Class `(default)` est utilisée automatiquement si vous ne spécifiez pas de `storageClassName` dans votre PVC.
+
+---
+
+## Étape 6 : Nettoyage
+
+Supprimez les ressources créées pendant cet exercice :
+
+```bash
+oc delete -f postgres-pvc-deployment.yaml
+oc delete pvc postgres-pvc
+```
+
+---
+
+## Conclusion
+
+Vous avez démontré concrètement la différence entre :
+- **`emptyDir`** : stockage temporaire, perdu à la suppression du pod
+- **PVC** : stockage persistant, survit à la suppression du pod et permet aux applications stateful de conserver leurs données
+
+En production, les bases de données et toute application stateful doivent toujours utiliser des PVCs pour garantir la durabilité des données.

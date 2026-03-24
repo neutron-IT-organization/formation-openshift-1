@@ -1,163 +1,194 @@
-# Exercice Guidé : Gestion des Utilisateurs dans OpenShift
+# Exercice Guidé : Gestion des Utilisateurs et RBAC dans OpenShift
 
-Cet exercice guidé est conçu pour être réalisé en **mode démonstration par un seul participant**. Vous allez configurer un fournisseur d'identité avec **htpasswd**, ajouter deux utilisateurs, leur attribuer des droits différents, puis vérifier que leurs accès au cluster diffèrent en fonction des permissions attribuées. Pour générer le fichier `htpasswd`, vous utiliserez un outil en ligne sécurisé : [HostingCanada Htpasswd Generator](https://hostingcanada.org/htpasswd-generator/).
+Cet exercice est réalisé en **mode démonstration par le formateur**. Vous allez observer comment configurer des rôles différents pour des utilisateurs et vérifier leurs accès respectifs.
 
 ---
 
 ## Objectifs de l'Exercice
 
-- Configurer un fournisseur d'identité (Identity Provider) `htpasswd` dans OpenShift.
-- Créer deux utilisateurs avec des identifiants distincts.
-- Attribuer des rôles différents à ces utilisateurs.
-- Vérifier que chaque utilisateur a des accès spécifiques au cluster.
-- Nettoyer le fournisseur d'identité et les utilisateurs créés.
+- Créer deux utilisateurs avec des identifiants distincts (déjà configurés sur le cluster).
+- Attribuer des rôles différents dans un namespace.
+- Vérifier que chaque utilisateur a des accès spécifiques.
+- Comprendre la différence entre les rôles `view`, `edit` et `admin`.
 
 ---
 
 ## Prérequis
 
 - Un cluster OpenShift opérationnel avec des droits administratifs.
-- OpenShift CLI (`oc`) installé et configuré.
-- Accès à un navigateur web.
+- OpenShift CLI (`oc`) configuré et connecté avec un compte admin.
+
+:::info Contexte de la formation
+Les utilisateurs de la formation (`paris-user`, `tokyo-user`, etc.) sont déjà configurés avec le provider `htpasswd`. Chaque utilisateur a le rôle `admin` dans son propre namespace `<city>-user-ns`.
+
+Dans cet exercice, nous allons créer de nouveaux utilisateurs temporaires pour démontrer la gestion des rôles.
+:::
 
 ---
 
 ## Étapes de l'Exercice
 
-### 1. Générer le Fichier `htpasswd`
+### 1. Créer le Fichier HTPasswd pour les Nouveaux Utilisateurs
 
-1. **Accéder au Générateur `htpasswd` en ligne** :  
-   Rendez-vous sur [HostingCanada Htpasswd Generator](https://hostingcanada.org/htpasswd-generator/).
+Sur votre machine, générez un fichier htpasswd avec deux utilisateurs de test :
 
-2. **Créer les Utilisateurs** :  
-   - Entrez `user1` comme nom d'utilisateur et définissez `password1` comme mot de passe. Cliquez sur "Create .htpasswd file". 
-   - Copiez la ligne générée.  
-   - Répétez l'opération pour `user2` avec le mot de passe `password2`.
+```bash
+# Créer le fichier avec user1
+htpasswd -c -B -b /tmp/htpasswd-demo user1 password1
 
+# Ajouter user2 au fichier
+htpasswd -B -b /tmp/htpasswd-demo user2 password2
 
-### 2. Configurer le Fournisseur d'Identité via la Console Web
+# Vérifier le contenu
+cat /tmp/htpasswd-demo
+```
 
-1. **Accéder à la Console Web d’OpenShift** :  
-   Connectez-vous à la console web d’OpenShift avec un compte ayant des droits administratifs.
+Sortie attendue :
+```
+user1:$2y$05$...
+user2:$2y$05$...
+```
 
-2. **Naviguer vers les Paramètres du Cluster** :  
-   - Dans le menu de gauche, cliquez sur **Administration**.
-   - Ensuite, sélectionnez **Cluster Settings**.
+### 2. Créer le Secret HTPasswd dans OpenShift
 
-3. **Ajouter un Fournisseur d’Identité** :  
-   - Dans l'onglet **Configuration**, repérez la section **OAuth**.
-   - Cliquez sur **Add** dans la section des **Identity Providers**.
+```bash
+oc create secret generic htpasswd-demo \
+  --from-file=htpasswd=/tmp/htpasswd-demo \
+  -n openshift-config
+```
 
-4. **Configurer le Fournisseur `htpasswd`** :  
-   - Choisissez **HTPasswd** comme type de fournisseur.
-   - Remplissez les champs demandés :
-     - **Name** : Entrez en nom pour le fournisseur: `YOURCITY_htpasswd_provider`.
-     - **Upload an HTPasswd file** : Collez les lignes générées lors de l'étape précédente.
+### 3. Configurer le Provider d'Identité
 
-5. **Enregistrer la Configuration** :  
-   - Cliquez sur **Save** pour appliquer la configuration.
+Ajoutez le provider au fichier OAuth du cluster :
 
-![Create htpasswd](./images/create-htpasswd.png)
+```bash
+oc edit oauth cluster
+```
 
+Ajoutez dans `spec.identityProviders` :
+```yaml
+  - htpasswd:
+      fileData:
+        name: htpasswd-demo
+    mappingMethod: claim
+    name: demo-htpasswd
+    type: HTPasswd
+```
 
-### 3. Attribuer des Rôles Différents aux Utilisateurs
+Sauvegardez et fermez l'éditeur. Attendez que les pods oauth-openshift redémarrent :
 
-1. **Créer un Projet pour Tester les Permissions** :  
-   ```bash
-   oc new-project rbac-demo
-   ```
+```bash
+oc get pods -n openshift-authentication -w
+```
 
-2. **Attribuer des Rôles** :  
-   - Donnez à `user1` le rôle `view` :
-     ```bash
-     oc policy add-role-to-user view user1 -n rbac-demo
-     ```
-   - Donnez à `user2` le rôle `edit` :
-     ```bash
-     oc policy add-role-to-user edit user2 -n rbac-demo
-     ```
+### 4. Créer un Namespace et Attribuer des Rôles Différents
 
+```bash
+oc new-project rbac-demo
+```
 
-### 4. Vérifier les Accès des Utilisateurs
+Donnez à `user1` le rôle `view` (lecture seule) :
+```bash
+oc policy add-role-to-user view user1 -n rbac-demo
+```
 
-1. **Connexion en tant que `user1`** :  
-   - Connectez-vous en tant que `user1` via `oc` :
-     ```bash
-     oc login -u user1 -p password1
-     ```
-     ```bash
-     Login successful.
-      You have access to the following projects and can switch between them with 'oc project <projectname>':
+Donnez à `user2` le rôle `edit` (lecture + écriture) :
+```bash
+oc policy add-role-to-user edit user2 -n rbac-demo
+```
 
-      * rbac-demo
-         openshift-virtualization-os-images
+Vérifiez les rolebindings créés :
+```bash
+oc get rolebinding -n rbac-demo
+```
 
-      Using project "rbac-demo".
-     ```
-   - Essayez d'exécuter les commandes suivantes :
-     - **Lister les pods** (autorisé) :
-       ```bash
-       oc get pods -n rbac-demo
-       ```
-       ```bash
-       No resources found in rbac-demo namespace.
-       ```
-     - **Créer un pod** (interdit) :
-       ```bash
-       oc run nginx --image=nginx -n rbac-demo
-       ```
-       ```bash
-       Error from server (Forbidden): pods is forbidden: User "user1" cannot create resource "pods" in API group "" in the namespace "rbac-demo"
-       ```
+### 5. Vérifier les Accès de Chaque Utilisateur
 
-2. **Connexion en tant que `user2`** :  
-   - Connectez-vous en tant que `user2` :
-     ```bash
-     oc login -u user2 -p password2
-     ```
-   - Essayez les mêmes commandes :
-     - **Lister les pods** (autorisé) :
-       ```bash
-       oc get pods -n rbac-demo
-       ```
-     - **Créer un pod** (autorisé) :
-       ```bash
-       oc run nginx --image=nginx -n rbac-demo
-       ```
+**Connexion en tant que `user1` (rôle view)** :
+```bash
+oc login -u user1 -p password1
+```
 
-3. **Observer les Différences** :  
-   Notez que `user1` a des permissions limitées à la consultation des ressources, tandis que `user2` peut les consulter et les modifier.
+```bash
+# Autorisé : lister les pods
+oc get pods -n rbac-demo
+# No resources found in rbac-demo namespace.
 
+# Interdit : créer un pod
+oc run nginx --image=nginx -n rbac-demo
+# Error from server (Forbidden): pods is forbidden: User "user1" cannot create resource...
+```
 
-### 5. Nettoyage
+**Connexion en tant que `user2` (rôle edit)** :
+```bash
+oc login -u user2 -p password2
+```
 
-1. **Supprimer le Projet et les Permissions** :  
-   ```bash
-   oc delete project rbac-demo
-   ```
+```bash
+# Autorisé : lister les pods
+oc get pods -n rbac-demo
 
-2. **Supprimer le Fournisseur d'Identité** :  
-   - Éditez la configuration OAuth pour retirer le fournisseur `htpasswd_provider` :
-     ```bash
-     oc edit oauth cluster
-     ```
-     Supprimez le bloc correspondant au fournisseur `htpasswd_provider`.
+# Autorisé : créer un pod
+oc run nginx --image=nginx -n rbac-demo
+# pod/nginx created
+```
 
-   - Supprimez le secret associé :
-     ```bash
-     oc delete secret htpasswd-secret -n openshift-config
-     ```
+### 6. Vérifier les Permissions sans Se Connecter
 
-3. **Supprimer les Utilisateurs (Optionnel)** :  
-   Pour nettoyer les traces des utilisateurs :
-   ```bash
-   oc delete user user1
-   oc delete user user2
-   oc delete identity htpasswd_provider:user1
-   oc delete identity htpasswd_provider:user2
-   ```
+OpenShift permet de tester les permissions sans changer d'utilisateur avec `oc auth can-i` :
 
+```bash
+# Revenir en tant qu'admin
+oc login -u <votre-user> -p <votre-password>
+
+# Vérifier si user1 peut créer des pods dans rbac-demo
+oc auth can-i create pods --as=user1 -n rbac-demo
+# no
+
+# Vérifier si user2 peut créer des pods dans rbac-demo
+oc auth can-i create pods --as=user2 -n rbac-demo
+# yes
+```
+
+---
+
+## Nettoyage
+
+```bash
+# Supprimer le projet et les permissions
+oc delete project rbac-demo
+
+# Supprimer les utilisateurs temporaires
+oc delete user user1 user2
+oc delete identity demo-htpasswd:user1 demo-htpasswd:user2
+
+# Supprimer le secret et le provider
+oc delete secret htpasswd-demo -n openshift-config
+
+# Éditer l'OAuth pour retirer le provider demo-htpasswd
+oc edit oauth cluster
+# Supprimez le bloc correspondant à demo-htpasswd
+```
+
+---
+
+## Résumé des Rôles OpenShift
+
+| Rôle | Get/List | Create | Update | Delete | Manage RBAC |
+|------|----------|--------|--------|--------|-------------|
+| `view` | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `edit` | ✅ | ✅ | ✅ | ✅ | ❌ |
+| `admin` | ✅ | ✅ | ✅ | ✅ | ✅ (namespace) |
+| `cluster-admin` | ✅ | ✅ | ✅ | ✅ | ✅ (cluster) |
+
+---
 
 ## Conclusion
 
-Vous avez appris à configurer un fournisseur d’identité `htpasswd` en utilisant un outil en ligne, à gérer des utilisateurs dans OpenShift, et à leur attribuer des permissions spécifiques. Cet exercice vous permet de mieux comprendre la gestion des identités et des accès dans un cluster OpenShift.
+Vous avez appris à :
+- Créer des utilisateurs avec `htpasswd` et les intégrer dans OpenShift
+- Attribuer des rôles différents (`view`, `edit`) à des utilisateurs dans un namespace
+- Vérifier les accès avec `oc auth can-i`
+- Nettoyer les utilisateurs et configurations temporaires
+
+La gestion fine des accès (RBAC) est essentielle pour la sécurité des clusters OpenShift en production.

@@ -1,18 +1,21 @@
 # Exercice Guidé : Examen des Ressources Kubernetes
 
-Dans cet exercice, nous allons explorer comment examiner et manipuler les ressources Kubernetes en utilisant `oc`, l'outil de ligne de commande pour OpenShift. Nous allons nous concentrer sur les sorties personnalisées, l'extraction et la modification de manifestes YAML, et l'application de ces modifications.
+Dans cet exercice, nous allons explorer comment examiner et manipuler les ressources Kubernetes en utilisant `oc`. Nous nous concentrons sur les sorties personnalisées, l'extraction de manifestes YAML et leur modification.
 
 ## Objectifs de l'exercice
 
-1. Utiliser un script pour afficher des informations spécifiques sur les pods.
+1. Afficher des ressources avec des vues personnalisées.
 2. Extraire un manifeste YAML d'un déploiement existant.
-3. Modifier le nom du déploiement et supprimer les champs inutilisés.
+3. Modifier le manifeste pour créer une nouvelle ressource.
 4. Appliquer les modifications au cluster.
 
+---
 
-### Étape 1 : Affichage des Pods avec une vue classique puis personnalisée
+### Étape 1 : Affichage des Pods avec une Vue Personnalisée
 
-Commencez par afficher une vue générale des pods dans le cluster pour examiner toutes les informations par défaut :
+Le namespace `l03p02` contient une application de démonstration déployée en avance par le formateur. Vous y avez accès en lecture.
+
+Affichez les pods dans ce namespace :
 
 ```bash
 oc get pods -n l03p02
@@ -24,7 +27,7 @@ NAME                          READY   STATUS    RESTARTS   AGE
 l03p02-app-75bb5d5698-c7dzj   1/1     Running   0          10m
 ```
 
-Ensuite, affinez l'affichage pour ne montrer que les informations essentielles, comme le nom et le statut des pods, en utilisant des colonnes personnalisées :
+Maintenant, affinez l'affichage avec des colonnes personnalisées pour ne montrer que le nom et le statut :
 
 ```bash
 oc get pods --custom-columns=NAME:.metadata.name,STATUS:.status.phase -n l03p02
@@ -36,16 +39,27 @@ NAME                          STATUS
 l03p02-app-75bb5d5698-c7dzj   Running
 ```
 
+:::tip Colonnes personnalisées
+La syntaxe `--custom-columns=NOM:.chemin.jsonpath` permet d'afficher uniquement les champs qui vous intéressent. Très utile pour créer des vues concises de vos ressources.
+:::
+
+---
 
 ### Étape 2 : Extraction d'un Manifeste YAML
 
-Extrayez les informations d'un déploiement nommé `example-deployment` au format YAML.
+Extrayez le manifeste du déploiement `l03p02-app` du namespace partagé au format YAML :
 
 ```bash
-oc get deployment l03p02-app -n l03p02 -oyaml > deployment.yaml
+oc get deployment l03p02-app -n l03p02 -o yaml > deployment.yaml
 ```
 
-**Exemple d'output YAML dans `deployment.yaml` :**
+Observez le contenu du fichier généré :
+
+```bash
+cat deployment.yaml
+```
+
+**Extrait du YAML généré :**
 
 ```yaml
 apiVersion: apps/v1
@@ -63,7 +77,6 @@ spec:
       app: l03p02-quarkus-aap
   template:
     metadata:
-      creationTimestamp: null
       labels:
         app: l03p02-quarkus-aap
     spec:
@@ -77,34 +90,34 @@ spec:
         name: quarkus-container
 status:
   availableReplicas: 1
-  conditions:
-  - lastTransitionTime: "2024-07-22T15:46:57Z"
-    lastUpdateTime: "2024-07-22T15:46:57Z"
-    message: Deployment has minimum availability.
-    reason: MinimumReplicasAvailable
-    status: "True"
-    type: Available
+  ...
 ```
+
+---
 
 ### Étape 3 : Modification du Manifeste YAML
 
-Ouvrez le fichier `deployment.yaml` dans un votre terminal et apportez les modifications suivantes :
+Ouvrez le fichier `deployment.yaml` dans l'éditeur :
 
+```bash
+vi deployment.yaml
+```
 
-1. ```vi deployment.yaml ```
-2. Enlevez toutes les metadata sauf "name" et "namespace"
-2. Changez le nom du déploiement à `<YOUR-CITY>-l03p02-app`.
-3. Changez le nom du namespace `<YOUR-CITY>-user-ns`.
-4. Supprimez le champ `status` entier.
+Apportez les modifications suivantes :
 
-**Manifeste YAML modifié :**
+1. **Supprimez tout le bloc `status`** (tout ce qui est sous `status:`)
+2. **Gardez uniquement `name` et `namespace`** dans `metadata` (supprimez `labels`, `annotations`, `creationTimestamp`, etc.)
+3. **Changez le nom** : `l03p02-app` → `<VOTRECITY>-l03p02-app`
+4. **Changez le namespace** : `l03p02` → `<VOTRECITY>-user-ns`
+
+**Manifeste YAML modifié (exemple pour prague) :**
 
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: <YOUR-CITY>-l03p02-app # prague-l03p02-app
-  namespace: <YOUR-CITY>-user-ns # prague-user-ns
+  name: prague-l03p02-app
+  namespace: prague-user-ns
 spec:
   replicas: 1
   selector:
@@ -112,7 +125,6 @@ spec:
       app: l03p02-quarkus-aap
   template:
     metadata:
-      creationTimestamp: null
       labels:
         app: l03p02-quarkus-aap
     spec:
@@ -126,26 +138,49 @@ spec:
         name: quarkus-container
 ```
 
+:::info Pourquoi supprimer le status et les metadata ?
+Le champ `status` est géré par Kubernetes et ne doit pas être fourni lors de la création de ressources. Les métadonnées comme `resourceVersion`, `uid`, `creationTimestamp` sont aussi spécifiques à l'instance existante et doivent être retirées.
+:::
+
+---
+
 ### Étape 4 : Application du Manifeste Modifié
 
-Appliquez le fichier modifié au cluster en utilisant la commande suivante :
+Appliquez le fichier modifié dans votre namespace :
 
 ```bash
 oc apply -f deployment.yaml
 ```
-![prague app](./images/prague-l03p02-app.png)
 
-Cette commande créera un nouveau déploiement nommé `prague-l03p02-app` avec la configuration spécifiée.
+Vérifiez que le déploiement a été créé :
 
-### Étape 5 : Nettoyage des Ressources (Clean Up)
+```bash
+oc get deployment -n <VOTRECITY>-user-ns
+```
 
-Pour éviter d'encombrer votre cluster, supprimez les ressources créées lors de cet exercice. 
+```
+NAME                  READY   UP-TO-DATE   AVAILABLE   AGE
+prague-l03p02-app     1/1     1            1           30s
+```
+
+---
+
+### Étape 5 : Nettoyage des Ressources
+
+Supprimez le déploiement créé lors de cet exercice :
 
 ```bash
 oc delete -f deployment.yaml
 ```
 
+---
 
 ### Conclusion
 
-Dans cet exercice, nous avons appris à examiner les ressources Kubernetes en utilisant des formats de sortie personnalisés pour extraire des informations spécifiques. Nous avons également extrait un manifeste YAML, modifié ses champs, et appliqué ces modifications au cluster. Ces compétences sont essentielles pour gérer et interroger efficacement les ressources Kubernetes dans OpenShift.
+Dans cet exercice, vous avez appris à :
+- Utiliser des colonnes personnalisées avec `oc get`
+- Extraire un manifeste YAML avec `-o yaml`
+- Modifier un manifeste pour l'adapter à votre namespace
+- Appliquer et supprimer des ressources avec `oc apply` et `oc delete`
+
+Ces compétences sont essentielles pour gérer et réutiliser efficacement des ressources Kubernetes.

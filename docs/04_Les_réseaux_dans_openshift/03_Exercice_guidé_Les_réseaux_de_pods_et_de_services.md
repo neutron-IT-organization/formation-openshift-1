@@ -1,144 +1,51 @@
 # Exercice Guidé : Les Services et les Routes dans OpenShift
 
-Dans cet exercice, vous allez créer différents types de services pour exposer vos applications et configurer des routes pour permettre un accès externe. Suivez les étapes ci-dessous pour mettre en pratique les concepts théoriques abordés dans le cours.
+Dans cet exercice, vous allez créer différents types de services pour exposer votre application et configurer des routes pour l'accès externe.
 
-### Objectifs de l'Exercice
+## Objectifs de l'Exercice
 
-- Créer des services `ClusterIP`, `NodePort`, et `LoadBalancer`.
-- Configurer une route pour exposer une application via HTTP.
-- Mettre en place une route TLS en mode `edge`.
-- Tester les différentes configurations de service et de route.
+- Créer un service `ClusterIP` pour l'accès interne.
+- Configurer une route HTTP et HTTPS pour l'accès externe.
+- Tester les différentes configurations.
 
 ## Prérequis
 
-Vous allez, au cours de cet exercice, exposer une application qui nous affichera les resultats des jeux olympiques de paris 2024.
-
-Pour cela créez un fichier nommé `olympic-medals-app.yaml` avec le contenu suivant :
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: olympic-medals-app
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: olympic-medals-app
-  template:
-    metadata:
-      labels:
-        app: olympic-medals-app
-    spec:
-      containers:
-        - name: olympic-medals-app
-          image: quay.io/neutron-it/olympic-medals-app:latest
-          ports:
-            - containerPort: 5000
-```
-
-**Appliquez ce service avec la commande suivante :**
+Une application **Olympic Medals** est déjà déployée dans votre namespace par le formateur. Vérifiez qu'elle est bien en cours d'exécution :
 
 ```bash
-oc apply -f olympic-medals-app.yaml
+oc get deployment olympic-medals-app
 ```
 
-![olympic medals app](./images/olympic-medals-app.png)
+```
+NAME                 READY   UP-TO-DATE   AVAILABLE   AGE
+olympic-medals-app   2/2     2            2           5m
+```
+
+```bash
+oc get pods -l app=olympic-medals-app
+```
+
+```
+NAME                                  READY   STATUS    RESTARTS   AGE
+olympic-medals-app-xxx-yyy1           1/1     Running   0          5m
+olympic-medals-app-xxx-yyy2           1/1     Running   0          5m
+```
+
+Si l'application n'est pas encore disponible, attendez quelques secondes et réessayez.
+
+---
 
 ## Étape 1 : Créer un Service ClusterIP
 
-Créez un fichier nommé `my-clusterip-service.yaml` avec le contenu suivant :
+Un service `ClusterIP` expose l'application **uniquement à l'intérieur du cluster**.
+
+Créez un fichier nommé `clusterip-service.yaml` :
 
 ```yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: olympic-medals-app
-spec:
-  selector:
-    app: my-app
-  ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 5000
-  type: ClusterIP
-```
-
-Ce fichier YAML définit un service `ClusterIP` qui expose les pods ayant le label `app: my-app` sur le port 80.
-
-**Appliquez ce service avec la commande suivante :**
-
-```bash
-oc apply -f my-clusterip-service.yaml
-```
-
-**Vérifiez que le service a été créé et qu'il est accessible depuis d'autres pods dans le cluster :**
-
-```bash
-oc get svc
-oc describe svc my-clusterip-service
-```
-
-## Étape 2 : Créer un Service NodePort
-
-Créez un fichier nommé `my-nodeport-service.yaml` avec le contenu suivant :
-
-```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: olympic-medals-app
-spec:
-  selector:
-    app: my-app
-  ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 5000
-    nodePort: 30007
-  type: NodePort
-```
-
-Ce fichier YAML définit un service `NodePort` qui expose le service sur le port 30007 de chaque nœud du cluster.
-
-**Appliquez ce service :**
-
-```bash
-oc apply -f my-nodeport-service.yaml
-```
-
-**Vérifiez que le service est accessible en utilisant l'adresse IP de l'un des nœuds du cluster :**
-
-```bash
-oc get svc
-NAME                   TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
-my-clusterip-service   ClusterIP   172.30.72.127    <none>        80/TCP         13m
-my-nodeport-service    NodePort    172.30.141.210   <none>        80:30007/TCP   27s
-```
-
-```bash
-oc get nodes -o jsonpath='{range .items[*]}{.status.addresses[?(@.type=="InternalIP")].address}{"\n"}{end}'
-<NODE_IP>
-```
-
-Accédez dans votre moteur de recherche a ```http://<NODE_IP>:30007``` pour accéder a votre application.
-
-Remplacez `<NODE_IP>` par l'adresse IP d'un nœud de votre cluster.
-
-![node port access](./images/nodeport-access.png)
-
-
-## Étape 3 : Créer un Service LoadBalancer (avec MetalLB si en environnement On-Premise)
-
-NOTE: TODO not configured yet on the cluster
-
-Créez un fichier nommé `my-loadbalancer-service.yaml` :
-
-```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: my-loadbalancer-service
+  name: olympic-medals-svc
 spec:
   selector:
     app: olympic-medals-app
@@ -146,97 +53,142 @@ spec:
   - protocol: TCP
     port: 80
     targetPort: 5000
+  type: ClusterIP
 ```
 
-**Appliquez le service :**
+Appliquez le service :
 
 ```bash
-oc apply -f my-loadbalancer-service.yaml
+oc apply -f clusterip-service.yaml
 ```
 
-**Vérifiez que le service est exposé avec une adresse IP externe :**
+Vérifiez que le service est créé et qu'il pointe bien vers les pods :
 
 ```bash
-oc get svc
+oc get svc olympic-medals-svc
+oc describe svc olympic-medals-svc
 ```
 
-## Étape 4 : Créer une Route pour Exposer le Service
+Observez les **Endpoints** — ils correspondent aux IPs des pods de l'application.
 
-Créez un fichier nommé `my-route.yaml` pour exposer votre application via HTTP :
+---
+
+## Étape 2 : Créer une Route HTTP
+
+Une `Route` expose l'application à l'extérieur du cluster via le nom de domaine géré par OpenShift.
+
+Créez un fichier nommé `http-route.yaml` :
 
 ```yaml
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  name: my-http-route
+  name: olympic-medals-http
 spec:
   to:
     kind: Service
-    name: my-clusterip-service
+    name: olympic-medals-svc
+  port:
+    targetPort: 80
 ```
 
-**Appliquez cette route :**
+Appliquez la route :
 
 ```bash
-oc apply -f my-route.yaml
+oc apply -f http-route.yaml
 ```
 
-**Vérifiez que la route est créée et accessible :**
+Récupérez l'URL de la route :
 
 ```bash
-oc get route my-http-route -o jsonpath='http://{.spec.host}'
-http://my-http-route-prague-user-ns.apps.neutron-sno-office.intraneutron.fr
+oc get route olympic-medals-http -o jsonpath='http://{.spec.host}'
 ```
 
-Accédez dans votre moteur de recherche a `http://<YOUR_ROUTE>` pour accéder a votre application.
-
-Remplacez `<NODE_IP>` par l'adresse IP d'un nœud de votre cluster.
+Ouvrez l'URL dans votre navigateur pour accéder à l'application Olympic Medals.
 
 ![route access](./images/route-access.png)
 
+---
 
-## Étape 5 : Configurer une Route TLS (Mode Edge)
+## Étape 3 : Créer une Route HTTPS (TLS Edge)
 
-Créez un fichier nommé `my-edge-route.yaml` :
+Une route TLS en mode `edge` chiffre le trafic entre le client et l'OpenShift router.
+
+Créez un fichier nommé `https-route.yaml` :
 
 ```yaml
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  name: my-edge-route
+  name: olympic-medals-https
 spec:
   to:
     kind: Service
-    name: my-clusterip-service
+    name: olympic-medals-svc
+  port:
+    targetPort: 80
   tls:
     termination: edge
+    insecureEdgeTerminationPolicy: Redirect
 ```
 
-**Appliquez la route TLS :**
+Appliquez la route :
 
 ```bash
-oc apply -f my-edge-route.yaml
+oc apply -f https-route.yaml
 ```
 
-**Testez l'accès HTTPS à l'application :**
+Récupérez l'URL HTTPS :
 
 ```bash
-oc get route my-edge-route -o jsonpath='https://{.spec.host}'
-https://my-edge-route-prague-user-ns.apps.neutron-sno-office.intraneutron.fr
+oc get route olympic-medals-https -o jsonpath='https://{.spec.host}'
 ```
+
+Testez l'accès HTTPS dans votre navigateur.
 
 ![route https access](./images/route-https-access.png)
 
-## Étape 6 : Nettoyage
+:::info TLS Edge Termination
+En mode `edge`, le chiffrement TLS est terminé au niveau du router OpenShift. Le trafic entre le router et les pods peut être en HTTP non chiffré. C'est le mode le plus courant pour les applications web simples.
+:::
 
-Après avoir terminé les tests, nettoyez les ressources créées pour éviter les coûts inutiles :
+---
+
+## Étape 4 : Inspecter la Configuration Réseau
+
+Listez toutes les ressources réseau de votre namespace :
 
 ```bash
-oc delete deployment olympic-medals-app
-oc delete svc my-clusterip-service my-nodeport-service my-loadbalancer-service
-oc delete route my-http-route my-edge-route
+oc get svc,route
 ```
+
+```
+NAME                      TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
+service/olympic-medals-svc  ClusterIP   172.30.x.x     <none>        80/TCP    5m
+
+NAME                                    HOST/PORT                                             ...
+route.route.openshift.io/olympic-medals-http    olympic-medals-http-prague-user-ns.apps...
+route.route.openshift.io/olympic-medals-https   olympic-medals-https-prague-user-ns.apps...
+```
+
+---
+
+## Étape 5 : Nettoyage
+
+Supprimez les services et routes créés pendant cet exercice (le déploiement de l'application sera conservé pour les exercices suivants) :
+
+```bash
+oc delete svc olympic-medals-svc
+oc delete route olympic-medals-http olympic-medals-https
+```
+
+---
 
 ## Conclusion
 
-En suivant cet exercice guidé, vous avez mis en pratique la création de différents types de services et de routes dans OpenShift. Vous avez appris à exposer des applications à l'intérieur et à l'extérieur du cluster et à sécuriser les connexions à l'aide des routes TLS.
+Vous avez appris à exposer une application avec différentes méthodes :
+- **Service ClusterIP** : accès interne uniquement (pod-to-pod, service-to-service)
+- **Route HTTP** : accès externe en HTTP
+- **Route HTTPS (TLS edge)** : accès externe chiffré
+
+Ces concepts sont fondamentaux pour comprendre comment les applications communiquent dans OpenShift.

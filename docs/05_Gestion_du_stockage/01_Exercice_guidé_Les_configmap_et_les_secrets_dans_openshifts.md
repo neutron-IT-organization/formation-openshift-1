@@ -1,52 +1,34 @@
 # Exercice Guidé : Utilisation des ConfigMaps et Secrets dans OpenShift
 
-Cet exercice vous guidera à travers la création, la gestion et la consommation de *ConfigMaps* et de *Secrets* pour vos applications dans OpenShift. Vous apprendrez à les utiliser pour stocker des configurations et des données sensibles, et à les intégrer dans un déploiement pour une gestion sécurisée des informations.
+Cet exercice vous guidera à travers la création, la gestion et l'injection de *ConfigMaps* et de *Secrets* dans une application déployée dans OpenShift.
 
-### Objectifs de l'Exercice
+## Objectifs de l'Exercice
 
-- Créer des *ConfigMaps* pour stocker des données de configuration applicatives.
-- Créer des *Secrets* pour gérer des données sensibles comme des mots de passe.
-- Intégrer les *ConfigMaps* et les *Secrets* dans des applications déployées.
-- Mettre à jour les *ConfigMaps* et redéployer les applications pour appliquer les nouvelles configurations.
-- Tester la sécurisation des données à travers les *Secrets*.
+- Créer des *ConfigMaps* pour stocker des données de configuration.
+- Créer des *Secrets* pour gérer des données sensibles.
+- Injecter les *ConfigMaps* et les *Secrets* dans un déploiement via des variables d'environnement.
+- Mettre à jour un *ConfigMap* et observer l'impact sur l'application.
 
 ## Prérequis
 
-Pour cet exercice, vous allez déployer une application simple qui nous affichera les messages de bienvenue d'un site web de démonstration. Pour cela, créez un fichier nommé `welcome-app.yaml` avec le contenu suivant :
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: welcome-app
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: welcome-app
-  template:
-    metadata:
-      labels:
-        app: welcome-app
-    spec:
-      containers:
-        - name: welcome-app-container
-          image: quay.io/neutron-it/welcome-app:latest
-          ports:
-            - containerPort: 8080
-```
-
-**Appliquez ce déploiement avec la commande suivante :**
+Une application **Welcome App** est déjà déployée dans votre namespace. Elle affiche un message de bienvenue configurable. Vérifiez qu'elle est en cours d'exécution :
 
 ```bash
-oc apply -f welcome-app.yaml
+oc get deployment welcome-app
 ```
 
-## Étape 1 : Créer un ConfigMap pour l'application
+```
+NAME          READY   UP-TO-DATE   AVAILABLE   AGE
+welcome-app   2/2     2            2           5m
+```
 
-1. **Objectif :** Créer un *ConfigMap* pour stocker le message de bienvenue affiché par l'application.
+---
 
-2. **Action :** Créez un fichier nommé `welcome-config.yaml` avec le contenu suivant :
+## Étape 1 : Créer un ConfigMap
+
+Un *ConfigMap* stocke des données de configuration non sensibles.
+
+Créez un fichier nommé `welcome-config.yaml` :
 
 ```yaml
 apiVersion: v1
@@ -58,23 +40,25 @@ data:
   app_mode: "production"
 ```
 
-3. **Commande :** Appliquez le fichier pour créer le *ConfigMap* :
+Appliquez le *ConfigMap* :
 
 ```bash
 oc apply -f welcome-config.yaml
 ```
 
-4. **Vérification :** Affichez le *ConfigMap* pour vérifier sa création :
+Vérifiez sa création :
 
 ```bash
 oc get configmap welcome-config -o yaml
 ```
 
-## Étape 2 : Créer un Secret pour l'application
+---
 
-1. **Objectif :** Créer un *Secret* pour stocker les informations sensibles de l'application, comme un token API.
+## Étape 2 : Créer un Secret
 
-2. **Action :** Créez un fichier nommé `welcome-secret.yaml` avec le contenu suivant :
+Un *Secret* stocke des données sensibles (mots de passe, tokens) encodées en base64.
+
+Créez un fichier nommé `welcome-secret.yaml` :
 
 ```yaml
 apiVersion: v1
@@ -83,26 +67,31 @@ metadata:
   name: welcome-secret
 type: Opaque
 data:
-  api_token: d2VsY29tZVRva2VuMTIz # Le token "welcomeToken123" encodé en base64
+  api_token: d2VsY29tZVRva2VuMTIz
 ```
 
-3. **Commande :** Appliquez le fichier pour créer le *Secret* :
+:::note
+`d2VsY29tZVRva2VuMTIz` est l'encodage base64 de `welcomeToken123`.
+Vous pouvez encoder vos propres valeurs avec : `echo -n "votre-valeur" | base64`
+:::
+
+Appliquez le *Secret* :
 
 ```bash
 oc apply -f welcome-secret.yaml
 ```
 
-4. **Vérification :** Affichez le *Secret* (sans afficher les données sensibles) pour vérifier sa création :
+Vérifiez sa création (les données sont masquées) :
 
 ```bash
 oc get secret welcome-secret -o yaml
 ```
 
-## Étape 3 : Consommer le ConfigMap et le Secret dans l'application
+---
 
-1. **Objectif :** Utiliser le *ConfigMap* et le *Secret* dans le déploiement de l'application pour les injecter en tant que variables d'environnement.
+## Étape 3 : Injecter le ConfigMap et le Secret dans l'Application
 
-2. **Action :** Modifiez le fichier `welcome-app.yaml` pour inclure les variables d'environnement :
+Modifiez le déploiement `welcome-app` pour injecter les variables d'environnement depuis le *ConfigMap* et le *Secret* :
 
 ```yaml
 apiVersion: apps/v1
@@ -142,54 +131,89 @@ spec:
                   key: api_token
 ```
 
-3. **Commande :** Appliquez les modifications pour mettre à jour le déploiement :
+Sauvegardez ce contenu dans `welcome-app-updated.yaml` et appliquez :
 
 ```bash
-oc apply -f welcome-app.yaml
+oc apply -f welcome-app-updated.yaml
 ```
 
-4. **Vérification :** Vérifiez que le déploiement est bien en cours d'exécution :
+Vérifiez que les pods sont redémarrés avec la nouvelle configuration :
 
 ```bash
 oc get pods -l app=welcome-app
 ```
 
-## Étape 4 : Mise à Jour du ConfigMap
+Vérifiez les variables d'environnement dans un pod :
 
-1. **Objectif :** Modifier le *ConfigMap* pour changer le message de bienvenue et observer l'impact sur l'application.
+```bash
+oc exec deployment/welcome-app -- env | grep -E "WELCOME|APP_MODE|API_TOKEN"
+```
 
-2. **Action :** Modifiez le fichier `welcome-config.yaml` pour mettre à jour le message :
+Sortie attendue :
+```
+WELCOME_MESSAGE=Bienvenue sur notre site de démonstration !
+APP_MODE=production
+API_TOKEN=welcomeToken123
+```
+
+---
+
+## Étape 4 : Mettre à Jour le ConfigMap
+
+Modifiez le fichier `welcome-config.yaml` pour changer le message :
 
 ```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: welcome-config
 data:
   welcome_message: "Bienvenue à notre nouvelle application déployée avec OpenShift !"
   app_mode: "development"
 ```
 
-3. **Commande :** Réappliquez le fichier pour mettre à jour le *ConfigMap* :
+Réappliquez le *ConfigMap* :
 
 ```bash
 oc apply -f welcome-config.yaml
 ```
 
-4. **Vérification :** Redémarrez les pods pour qu'ils récupèrent la nouvelle configuration :
+:::warning Les variables d'environnement ne se mettent pas à jour automatiquement
+Contrairement aux volumes, les variables d'environnement injectées depuis un ConfigMap ne sont **pas mises à jour dynamiquement**. Il faut redémarrer les pods.
+:::
+
+Redémarrez les pods pour qu'ils récupèrent la nouvelle configuration :
 
 ```bash
 oc rollout restart deployment welcome-app
 ```
 
-## Étape 6 : Nettoyage
-
-Après avoir terminé les tests, nettoyez les ressources créées :
+Vérifiez la mise à jour :
 
 ```bash
-oc delete deployment welcome-app
+oc exec deployment/welcome-app -- env | grep WELCOME_MESSAGE
+```
+
+---
+
+## Étape 5 : Nettoyage
+
+Supprimez les ressources créées pendant cet exercice :
+
+```bash
 oc delete configmap welcome-config
 oc delete secret welcome-secret
-oc delete role secret-reader
-oc delete rolebinding read-secrets
+oc delete deployment welcome-app
 ```
+
+---
 
 ## Conclusion
 
-En suivant cet exercice, vous avez appris à créer et gérer des *ConfigMaps* et des *Secrets* dans OpenShift. Vous avez exploré la façon de les intégrer dans une application déployée, de les mettre à jour. Cela vous permet de gérer les configurations et les informations sensibles de manière centralisée et sécurisée dans un environnement OpenShift.
+Vous avez appris à :
+- Créer des *ConfigMaps* pour externaliser la configuration des applications
+- Créer des *Secrets* pour gérer les données sensibles
+- Injecter ces ressources comme variables d'environnement dans un déploiement
+- Mettre à jour un *ConfigMap* et redémarrer l'application pour appliquer les changements
+
+Ces pratiques permettent de **découpler la configuration du code** et de gérer les données sensibles de manière centralisée et sécurisée.
