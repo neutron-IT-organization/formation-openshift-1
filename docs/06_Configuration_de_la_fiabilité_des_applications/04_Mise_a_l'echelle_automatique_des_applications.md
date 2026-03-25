@@ -1,55 +1,99 @@
-# Haute disponibilité des applications dans Kubernetes : Mise à l’échelle automatique
+# Mise à l'échelle automatique des applications dans OpenShift
 
-#### 1. Différence entre le scaling vertical et le scaling horizontal
+## Introduction
 
-Pour garantir la haute disponibilité d'une application dans Kubernetes, il est important de comprendre les deux approches principales de mise à l’échelle : le **scaling vertical** et le **scaling horizontal**.
+La mise à l'échelle automatique est l'un des mécanismes fondamentaux qui distinguent une plateforme de conteneurs d'un simple gestionnaire de processus. Plutôt que de dimensionner les applications pour le pic de charge maximal prévu (et gaspiller des ressources en dehors de ces pics), la mise à l'échelle automatique permet à l'infrastructure d'adapter dynamiquement la capacité en fonction de la demande réelle.
 
-- **Scaling vertical (mise à l’échelle verticale)** : Cette approche consiste à augmenter les ressources (CPU, mémoire) allouées à un pod unique. Par exemple, si un pod manque de mémoire pour traiter les requêtes entrantes, on peut augmenter la quantité de mémoire allouée à ce pod. Cela permet au pod de traiter plus de charge, mais il y a une limite physique liée aux ressources disponibles sur les nœuds du cluster. L'inconvénient principal de cette approche est qu'elle ne permet pas d'assurer une redondance des pods : un pod plus grand ne protège pas contre les défaillances, car si le pod unique échoue, le service est interrompu.
+OpenShift propose plusieurs approches de mise à l'échelle automatique, chacune répondant à un besoin différent. Cette page se concentre sur la mise à l'échelle horizontale automatique via le **HorizontalPodAutoscaler (HPA)**, l'outil le plus couramment utilisé, et présente brièvement les alternatives.
 
-- **Scaling horizontal (mise à l’échelle horizontale)** : Cette méthode consiste à augmenter le nombre de réplicas de pods pour distribuer la charge sur plusieurs instances. Au lieu d’augmenter les ressources d’un seul pod, on crée de nouvelles instances de ce pod pour répondre à la demande. Cette approche est idéale pour assurer la résilience et la haute disponibilité, car plusieurs réplicas de l’application peuvent fonctionner simultanément. Si un pod tombe en panne, les autres prennent le relais, maintenant ainsi le service en ligne.
+---
 
-![HPA vs VPA](./images/HPA-vs-VPA.png)
+## Scaling vertical vs scaling horizontal
 
-Dans Kubernetes, le **HorizontalPodAutoscaler (HPA)** est utilisé pour la mise à l’échelle horizontale, tandis que le **Vertical Pod Autoscaler (VPA)** est utilisé pour ajuster les ressources allouées à chaque pod. Cependant, l’approche horizontale est souvent privilégiée pour sa capacité à distribuer la charge et à offrir une meilleure tolérance aux pannes.
+Avant d'aborder l'automatisation, il est important de comprendre les deux stratégies de base :
 
-#### 2. Mise à l’échelle automatique des pods avec l’HorizontalPodAutoscaler (HPA)
+| Dimension | Scaling vertical | Scaling horizontal |
+|---|---|---|
+| **Principe** | Augmenter les ressources d'un pod existant (CPU, RAM) | Augmenter le nombre de réplicas de pods |
+| **Résultat** | Un pod plus puissant | Plusieurs pods identiques en parallèle |
+| **Tolérance aux pannes** | Faible (point de défaillance unique) | Forte (redondance naturelle) |
+| **Limite** | Plafonnée par la capacité du nœud le plus grand | Limitée par la scalabilité de l'application |
+| **Outil Kubernetes** | Vertical Pod Autoscaler (VPA) | HorizontalPodAutoscaler (HPA) |
+| **Impact sur le service** | Redémarrage du pod nécessaire | Transparent pour les utilisateurs |
 
-La mise à l’échelle horizontale permet donc de garantir que les applications restent disponibles et performantes même face à des variations de charge importantes. Kubernetes offre la possibilité de mettre à l’échelle automatiquement les déploiements en fonction de la charge des pods de l’application à travers la ressource **HorizontalPodAutoscaler (HPA)**. Cette mise à l'échelle permet d'adapter le nombre de réplicas de pods à la charge réelle, garantissant ainsi une utilisation optimale des ressources du cluster tout en maintenant la réactivité de l'application.
+Dans la grande majorité des cas de production, **le scaling horizontal est privilégié** car il améliore simultanément les performances et la résilience. Une application correctement conçue (stateless, sans affinité de session serveur) bénéficie naturellement de la multiplication des réplicas.
 
-L’HPA s’appuie sur les métriques de performance collectées par le sous-système **OpenShift Metrics**, qui est préinstallé dans OpenShift 4. Cela simplifie la configuration, car aucune installation supplémentaire n’est nécessaire, contrairement à OpenShift 3.
+---
 
-#### 3. Fonctionnement de l’autoscaler de pod horizontal
+## Le HorizontalPodAutoscaler (HPA)
 
-L’autoscaler de pod horizontal fonctionne en boucle et effectue les actions suivantes toutes les 15 secondes :
+### Principe de fonctionnement
 
-- **Récupération des métriques** : L’autoscaler obtient les détails de la métrique à partir de la ressource HPA.
-- **Collecte des données de performance** : Pour chaque pod ciblé, l’HPA collecte les métriques de performance telles que l’utilisation du processeur et de la mémoire.
-- **Calcul de l’utilisation** : L’HPA calcule le pourcentage d’utilisation de chaque pod à partir des métriques collectées et des ressources demandées (CPU ou mémoire).
-- **Ajustement du nombre de réplicas** : En se basant sur la moyenne d’utilisation et les demandes de ressources moyennes, l’HPA ajuste le nombre de réplicas afin de maintenir une utilisation équilibrée des ressources.
+Le HPA est un contrôleur Kubernetes qui observe en permanence les métriques de performance d'un ensemble de pods et ajuste automatiquement le nombre de réplicas d'un Deployment, StatefulSet ou ReplicaSet pour maintenir les métriques cibles dans les valeurs définies.
 
-#### 4. Configuration de l’HPA pour un déploiement
+La boucle de contrôle s'exécute toutes les **15 secondes** et effectue les étapes suivantes :
 
-Pour activer la mise à l’échelle automatique d’un déploiement, il est nécessaire de définir des demandes de ressources (CPU et/ou mémoire) pour les pods. Cela permet à l’HPA de calculer le pourcentage d’utilisation des ressources et d’ajuster le nombre de réplicas en conséquence.
+1. Interroge le serveur de métriques (`metrics-server`) pour récupérer les valeurs actuelles.
+2. Calcule le ratio entre la consommation actuelle et la cible définie.
+3. Détermine le nombre de réplicas désiré selon la formule :
 
-La méthode la plus simple pour créer une ressource HPA est d’utiliser la commande `oc autoscale`. Par exemple :
-
-```bash
-oc autoscale deployment/hello --min 1 --max 10 --cpu-percent 80
+```
+Replicas désirés = ceil(Replicas actuels × (Utilisation actuelle / Utilisation cible))
 ```
 
-Cette commande crée un HPA qui ajuste automatiquement le nombre de réplicas du déploiement `hello` pour maintenir l’utilisation de la CPU en dessous de 80 %. Les options `--min` et `--max` définissent respectivement le nombre minimal et maximal de réplicas que l’HPA peut ajuster.
+Par exemple, avec 3 réplicas à 90% CPU et une cible à 70% :
 
-#### 5. Créer un HPA à partir d’un fichier YAML
+```
+ceil(3 × (90 / 70)) = ceil(3.857) = 4 réplicas
+```
 
-Il est également possible de définir un HPA en utilisant un fichier YAML pour plus de flexibilité :
+:::info Prérequis : metrics-server
+Le HPA nécessite que le composant `metrics-server` soit actif dans le cluster pour collecter les métriques de CPU et mémoire des pods. Dans OpenShift 4, ce composant est inclus dans la plateforme via le sous-système OpenShift Monitoring et est actif par défaut — aucune installation supplémentaire n'est nécessaire. Pour vérifier son état : `oc get pods -n openshift-monitoring | grep metrics-server`
+:::
+
+### Types de métriques supportées
+
+| Type | Description | Exemple |
+|---|---|---|
+| **Resource (CPU)** | Utilisation CPU moyenne des pods par rapport aux requests | `averageUtilization: 70` |
+| **Resource (Memory)** | Utilisation mémoire moyenne des pods par rapport aux requests | `averageUtilization: 80` |
+| **Pods** | Métrique personnalisée par pod (ex: requêtes/seconde) | `averageValue: "1k"` |
+| **Object** | Métrique d'un objet Kubernetes (ex: longueur d'une queue) | `value: "500"` |
+| **External** | Métrique externe au cluster (ex: messages dans une queue SQS) | `value: "100"` |
+
+---
+
+## Configuration d'un HPA
+
+### Via la commande oc autoscale
+
+La méthode la plus rapide pour créer un HPA basique basé sur la CPU :
+
+```bash
+oc autoscale deployment/welcome-app \
+  --min 2 \
+  --max 10 \
+  --cpu-percent 70
+```
+
+### Via un fichier YAML (recommandé)
+
+La déclaration YAML offre plus de flexibilité et permet de versionner la configuration dans un dépôt Git :
+
+**HPA basé sur la CPU :**
 
 ```yaml
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: hello
+  name: welcome-app-hpa
+  namespace: production
 spec:
-  minReplicas: 1
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: welcome-app
+  minReplicas: 2
   maxReplicas: 10
   metrics:
   - type: Resource
@@ -57,38 +101,23 @@ spec:
       name: cpu
       target:
         type: Utilization
-        averageUtilization: 80
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: hello
+        averageUtilization: 70
 ```
 
-Ce fichier YAML définit un HPA qui ajuste le nombre de réplicas entre 1 et 10 en fonction de l’utilisation moyenne de la CPU. Si la consommation moyenne de CPU dépasse 80 %, l’HPA ajoutera des réplicas pour alléger la charge sur chaque pod. Inversement, si l’utilisation moyenne est inférieure à 80 %, l’HPA réduira le nombre de réplicas.
-
-Pour appliquer ce fichier, utilisez la commande suivante :
-
-```bash
-oc apply -f hello-hpa.yaml
-```
-
-#### 6. Précautions lors de la mise à l’échelle
-
-Il est important de noter que la valeur affichée dans la colonne `TARGETS` de la commande `oc get hpa` peut initialement être `<unknown>`. Cela indique que les métriques ne sont pas encore disponibles pour les pods, et il peut falloir quelques minutes pour que cette valeur se mette à jour. Si la valeur reste `<unknown>`, cela peut signifier que les pods ne disposent pas de demandes de ressources définies.
-
-**Conseil :** Les pods créés via `oc create deployment` n’ont pas de demandes de ressources par défaut. Pour permettre une mise à l’échelle efficace, il est recommandé de modifier les ressources de déploiement ou de définir des limites par défaut pour les projets.
-
-#### 7. Mise à l’échelle basée sur la mémoire
-
-En plus de la CPU, il est possible de configurer la mise à l’échelle en fonction de la mémoire :
+**HPA basé sur la mémoire :**
 
 ```yaml
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: hello
+  name: welcome-app-hpa-memory
+  namespace: production
 spec:
-  minReplicas: 1
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: welcome-app
+  minReplicas: 2
   maxReplicas: 10
   metrics:
   - type: Resource
@@ -99,10 +128,136 @@ spec:
         averageUtilization: 80
 ```
 
-Dans cet exemple, l’HPA ajuste le nombre de réplicas en fonction de l’utilisation de la mémoire. Cependant, cette méthode peut être moins efficace pour les applications dont la consommation de mémoire globale augmente proportionnellement au nombre de réplicas.
+**HPA multi-métriques (CPU + mémoire) :**
 
-#### 8. Résilience et gestion des pics de charge
+```yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: welcome-app-hpa-multi
+  namespace: production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: welcome-app
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300   # Attendre 5 min avant de réduire
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60               # Réduire au max 10% par minute
+    scaleUp:
+      stabilizationWindowSeconds: 0    # Monter rapidement
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15              # Doubler les réplicas toutes les 15s si besoin
+```
 
-Pour garantir une haute disponibilité, il est recommandé de conserver un nombre minimum de pods en réserve pour faire face aux pics de charge soudains. Cela permet de maintenir une bonne réactivité de l'application même en cas d’augmentation rapide de la demande. À l’inverse, un nombre excessif de pods peut surcharger les ressources du cluster, il est donc important de bien ajuster les valeurs `minReplicas` et `maxReplicas`.
+Pour appliquer la configuration :
 
-En configurant correctement l'HPA, vous pouvez optimiser la consommation de ressources et améliorer la réactivité de vos applications, assurant ainsi une haute disponibilité dans des environnements dynamiques comme ceux gérés par Kubernetes et OpenShift.
+```bash
+oc apply -f welcome-app-hpa.yaml
+```
+
+:::tip Valeurs de cible CPU recommandées
+Une cible de 70% d'utilisation CPU est généralement un bon compromis : elle laisse suffisamment de marge pour absorber les pics entre deux cycles d'évaluation (15 secondes) tout en maintenant les pods suffisamment chargés pour éviter un sur-provisionnement. Évitez des cibles supérieures à 90% car le HPA ne peut pas réagir instantanément — il y aura toujours un délai entre la montée en charge et l'arrivée des nouveaux pods.
+:::
+
+---
+
+## Vue dans la console OpenShift
+
+![Vue HPA dans la console OpenShift](./images/console-hpa.svg)
+
+*Vue de la console OpenShift affichant le détail d'un HorizontalPodAutoscaler : réplicas actuels (3), cible CPU à 70%, utilisation courante à 45%, et barre de progression visuelle.*
+
+Pour accéder à la vue HPA dans la console :
+
+1. Naviguer vers **Workloads > HorizontalPodAutoscalers** dans la perspective Administrateur
+2. Sélectionner le HPA souhaité pour voir le détail de son état
+3. L'onglet **Details** affiche les métriques actuelles, les limites min/max et le dernier événement de scaling
+
+### Commandes de suivi
+
+```bash
+# Afficher l'état du HPA
+oc get hpa -n production
+
+# Exemple de sortie
+# NAME               REFERENCE              TARGETS    MINPODS   MAXPODS   REPLICAS
+# welcome-app-hpa    Deployment/welcome-app 45%/70%    2         10        3
+
+# Détail complet
+oc describe hpa welcome-app-hpa -n production
+
+# Suivre les événements de scaling en temps réel
+oc get events -n production --field-selector reason=SuccessfulRescale
+```
+
+---
+
+## Comportements importants et précautions
+
+### Prérequis : requests CPU/mémoire obligatoires
+
+Le HPA calcule l'utilisation **relative aux requests** définies sur les conteneurs. Sans requests, l'utilisation est indéfinie et la colonne `TARGETS` affiche `<unknown>`.
+
+```bash
+# Vérifier que les requests sont définies
+oc get deployment welcome-app -o jsonpath='{.spec.template.spec.containers[*].resources.requests}'
+```
+
+### Délais de stabilisation
+
+Par défaut, Kubernetes attend 5 minutes avant de réduire le nombre de réplicas (stabilisation à la baisse) pour éviter les oscillations. La montée en charge est plus agressive. Ces comportements sont configurables via le champ `behavior` de la spec HPA (voir exemple multi-métriques ci-dessus).
+
+### Interaction avec PodDisruptionBudget
+
+:::warning HPA et PodDisruptionBudget : interaction à surveiller
+Lorsqu'un HPA réduit le nombre de réplicas (scale down) en même temps qu'un rolling update ou une maintenance de nœud est en cours, le `PodDisruptionBudget (PDB)` peut bloquer la suppression de pods si le nombre de pods disponibles tomberait en dessous du seuil défini. Dans ce cas, le scale down est simplement retardé jusqu'à ce que le PDB soit satisfait. Cependant, si les valeurs `minReplicas` de l'HPA et `minAvailable` du PDB sont mal coordonnées, cela peut entraîner un blocage permanent. Règle pratique : `minAvailable (PDB) < minReplicas (HPA)`.
+:::
+
+---
+
+## Comparaison HPA, VPA et KEDA
+
+| Outil | Axe de scaling | Métriques | Cas d'usage idéal |
+|---|---|---|---|
+| **HPA** | Horizontal (nombre de pods) | CPU, mémoire, métriques custom | Applications stateless soumises à des variations de charge |
+| **VPA** | Vertical (ressources par pod) | CPU, mémoire | Applications dont le sizing est difficile à estimer, workloads batch |
+| **KEDA** | Horizontal (piloté par événements) | Files de messages, bases de données, HTTP, cron | Traitements asynchrones, workers de queue, scale-to-zero |
+
+:::note KEDA dans OpenShift
+KEDA (Kubernetes Event-driven Autoscaling) est disponible en tant qu'opérateur dans le catalogue OperatorHub d'OpenShift. Il étend le HPA natif pour supporter des dizaines de sources de métriques externes (Kafka, RabbitMQ, AWS SQS, Prometheus, etc.) et permet notamment le **scale-to-zero** — une capacité que le HPA natif ne supporte pas (minimum 1 réplica).
+:::
+
+---
+
+## Résumé
+
+Le HorizontalPodAutoscaler est l'outil de référence pour la mise à l'échelle automatique dans OpenShift. Pour une configuration efficace :
+
+1. **Toujours définir des requests CPU et/ou mémoire** sur les conteneurs ciblés par le HPA.
+2. **Choisir une cible d'utilisation réaliste** : 60-70% pour la CPU est un bon point de départ.
+3. **Définir un `minReplicas` >= 2** pour les applications de production afin d'assurer la haute disponibilité même en dehors des pics.
+4. **Coordonner le HPA avec le PodDisruptionBudget** pour éviter les conflits lors des opérations de maintenance.
+5. **Surveiller les événements de scaling** pour détecter les oscillations ou les blocages.
+6. **Envisager KEDA** pour les workloads pilotés par des événements ou nécessitant le scale-to-zero.

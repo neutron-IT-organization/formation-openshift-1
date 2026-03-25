@@ -1,0 +1,124 @@
+<svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif">
+  <rect width="1000" height="600" fill="#1a1a2e" rx="8"/>
+  <rect x="0" y="0" width="1000" height="36" fill="#2d2d44" rx="8"/>
+  <rect x="0" y="20" width="1000" height="16" fill="#2d2d44"/>
+  <circle cx="20" cy="18" r="6" fill="#ff5f57"/>
+  <circle cx="40" cy="18" r="6" fill="#febc2e"/>
+  <circle cx="60" cy="18" r="6" fill="#28c840"/>
+  <rect x="100" y="8" width="700" height="20" rx="10" fill="#1a1a2e"/>
+  <text x="450" y="22" text-anchor="middle" font-size="11" fill="#aaa">https://console-openshift-console.apps/.../resourcequotas/quota-formation</text>
+
+  <rect x="0" y="36" width="1000" height="564" fill="#0f0f0f"/>
+
+  <!-- Top nav -->
+  <rect x="0" y="36" width="1000" height="48" fill="#1b1d21"/>
+  <rect x="12" y="48" width="28" height="22" rx="2" fill="#ff0454"/>
+  <text x="16" y="63" font-size="12" font-weight="bold" fill="white">RH</text>
+  <text x="48" y="63" font-size="14" font-weight="bold" fill="white">OpenShift</text>
+  <text x="150" y="65" font-size="12" fill="#8a8d90">Administrator  |  Project: prague-user-ns</text>
+
+  <!-- Left sidebar -->
+  <rect x="0" y="84" width="220" height="516" fill="#1b1d21"/>
+  <text x="20" y="115" font-size="12" fill="#8a8d90">Home</text>
+  <text x="20" y="143" font-size="12" fill="#8a8d90">Workloads</text>
+  <text x="20" y="171" font-size="12" fill="#8a8d90">Networking</text>
+  <rect x="0" y="180" width="220" height="24" fill="#202cac"/>
+  <text x="20" y="197" font-size="12" font-weight="bold" fill="white">Administration</text>
+  <text x="36" y="225" font-size="11" fill="#8a8d90">Cluster Settings</text>
+  <text x="36" y="247" font-size="11" fill="#8a8d90">Namespaces</text>
+  <text x="36" y="269" font-size="11" fill="white">ResourceQuotas</text>
+  <rect x="0" y="275" width="220" height="22" fill="#2a2d31"/>
+  <text x="36" y="290" font-size="11" fill="white">  quota-formation</text>
+  <text x="36" y="312" font-size="11" fill="#8a8d90">LimitRanges</text>
+
+  <!-- Main area -->
+  <rect x="220" y="84" width="780" height="516" fill="#0f0f0f"/>
+
+  <!-- Breadcrumb + title -->
+  <text x="235" y="108" font-size="12" fill="#8a8d90">Administration > ResourceQuotas > quota-formation</text>
+  <text x="235" y="138" font-size="22" font-weight="bold" fill="white">quota-formation</text>
+  <rect x="870" y="120" width="110" height="26" rx="4" fill="#ff0454"/>
+  <text x="925" y="137" text-anchor="middle" font-size="12" fill="white">Delete Quota</text>
+
+  <!-- Quota usage table -->
+  <rect x="235" y="158" width="740" height="340" rx="6" fill="#1b1d21" stroke="#2c2f33" stroke-width="1"/>
+  <text x="255" y="182" font-size="14" font-weight="bold" fill="white">Quota Usage</text>
+  <line x1="235" y1="192" x2="975" y2="192" stroke="#2c2f33" stroke-width="1"/>
+
+  <!-- Table header -->
+  <rect x="235" y="192" width="740" height="28" fill="#141416"/>
+  <text x="255" y="211" font-size="11" fill="#6a6e73">RESOURCE</text>
+  <text x="480" y="211" font-size="11" fill="#6a6e73">USED</text>
+  <text x="620" y="211" font-size="11" fill="#6a6e73">MAX</text>
+  <text x="740" y="211" font-size="11" fill="#6a6e73">PROGRESSION</text>
+
+  <!-- Row 1: requests.cpu -->
+  <rect x="235" y="220" width="740" height="36" fill="#1b1d21"/>
+  <text x="255" y="242" font-size="12" fill="white">requests.cpu</text>
+  <text x="480" y="242" font-size="12" fill="#f0ab00">900m</text>
+  <text x="620" y="242" font-size="12" fill="white">900m</text>
+  <!-- Progress bar full (orange = at limit) -->
+  <rect x="740" y="230" width="200" height="14" rx="7" fill="#2c2f33"/>
+  <rect x="740" y="230" width="200" height="14" rx="7" fill="#f0ab00"/>
+  <text x="950" y="242" font-size="11" fill="#f0ab00">100%</text>
+
+  <!-- Row 2: requests.memory -->
+  <rect x="235" y="256" width="740" height="36" fill="#141416"/>
+  <text x="255" y="278" font-size="12" fill="white">requests.memory</text>
+  <text x="480" y="278" font-size="12" fill="#3db838">384Mi</text>
+  <text x="620" y="278" font-size="12" fill="white">512Mi</text>
+  <rect x="740" y="266" width="200" height="14" rx="7" fill="#2c2f33"/>
+  <rect x="740" y="266" width="150" height="14" rx="7" fill="#3db838"/>
+  <text x="950" y="278" font-size="11" fill="#3db838">75%</text>
+
+  <!-- Row 3: limits.cpu -->
+  <rect x="235" y="292" width="740" height="36" fill="#1b1d21"/>
+  <text x="255" y="314" font-size="12" fill="white">limits.cpu</text>
+  <text x="480" y="314" font-size="12" fill="#3db838">1800m</text>
+  <text x="620" y="314" font-size="12" fill="white">2</text>
+  <rect x="740" y="302" width="200" height="14" rx="7" fill="#2c2f33"/>
+  <rect x="740" y="302" width="180" height="14" rx="7" fill="#3db838"/>
+  <text x="950" y="314" font-size="11" fill="#3db838">90%</text>
+
+  <!-- Row 4: limits.memory -->
+  <rect x="235" y="328" width="740" height="36" fill="#141416"/>
+  <text x="255" y="350" font-size="12" fill="white">limits.memory</text>
+  <text x="480" y="350" font-size="12" fill="#3db838">768Mi</text>
+  <text x="620" y="350" font-size="12" fill="white">1Gi</text>
+  <rect x="740" y="338" width="200" height="14" rx="7" fill="#2c2f33"/>
+  <rect x="740" y="338" width="150" height="14" rx="7" fill="#3db838"/>
+  <text x="950" y="350" font-size="11" fill="#3db838">75%</text>
+
+  <!-- Row 5: pods -->
+  <rect x="235" y="364" width="740" height="36" fill="#1b1d21"/>
+  <text x="255" y="386" font-size="12" fill="white">pods</text>
+  <text x="480" y="386" font-size="12" fill="#3db838">3</text>
+  <text x="620" y="386" font-size="12" fill="white">5</text>
+  <rect x="740" y="374" width="200" height="14" rx="7" fill="#2c2f33"/>
+  <rect x="740" y="374" width="120" height="14" rx="7" fill="#3db838"/>
+  <text x="950" y="386" font-size="11" fill="#3db838">60%</text>
+
+  <!-- Row 6: persistentvolumeclaims -->
+  <rect x="235" y="400" width="740" height="36" fill="#141416"/>
+  <text x="255" y="422" font-size="12" fill="white">persistentvolumeclaims</text>
+  <text x="480" y="422" font-size="12" fill="#3db838">0</text>
+  <text x="620" y="422" font-size="12" fill="white">5</text>
+  <rect x="740" y="410" width="200" height="14" rx="7" fill="#2c2f33"/>
+  <rect x="740" y="410" width="0" height="14" rx="7" fill="#3db838"/>
+  <text x="950" y="422" font-size="11" fill="#3db838">0%</text>
+
+  <!-- Row 7: requests.storage -->
+  <rect x="235" y="436" width="740" height="36" fill="#1b1d21"/>
+  <text x="255" y="458" font-size="12" fill="white">requests.storage</text>
+  <text x="480" y="458" font-size="12" fill="#3db838">0</text>
+  <text x="620" y="458" font-size="12" fill="white">20Gi</text>
+  <rect x="740" y="446" width="200" height="14" rx="7" fill="#2c2f33"/>
+  <rect x="740" y="446" width="0" height="14" rx="7" fill="#3db838"/>
+  <text x="950" y="458" font-size="11" fill="#3db838">0%</text>
+
+  <!-- Warning banner for exceeded quota -->
+  <rect x="235" y="510" width="740" height="50" rx="6" fill="#2d1f00" stroke="#f0ab00" stroke-width="1.5"/>
+  <rect x="245" y="522" width="6" height="26" rx="3" fill="#f0ab00"/>
+  <text x="265" y="538" font-size="12" font-weight="bold" fill="#f0ab00">Quota CPU requests atteint (900m/900m)</text>
+  <text x="265" y="554" font-size="11" fill="#8a8d90">Les nouveaux pods ne pourront pas être créés tant que le quota n'est pas libéré.</text>
+</svg>

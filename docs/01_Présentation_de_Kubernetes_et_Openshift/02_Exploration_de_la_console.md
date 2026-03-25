@@ -2,134 +2,244 @@
 
 ## Objectif
 
-Dans cette section, nous allons explorer la console web d'OpenShift. La console web offre une interface graphique intuitive pour gérer les ressources de votre cluster, déployer des applications, surveiller les performances et configurer les paramètres.
+La console web d'OpenShift est l'interface graphique principale pour interagir avec votre cluster. Elle permet de gérer les ressources, déployer des applications, surveiller les performances et configurer l'infrastructure — le tout sans quitter votre navigateur. Cette section vous guide à travers les différentes zones de la console et vous prépare à naviguer efficacement dans votre environnement de travail.
 
-### Introduction à la Console Web Red Hat OpenShift
+:::info Console web vs ligne de commande
+Toutes les actions réalisables dans la console sont également disponibles via `oc` en ligne de commande. Dans cette formation, nous utiliserons les deux. La console est idéale pour visualiser et explorer ; la ligne de commande est plus efficace pour automatiser et scripter.
+:::
 
-La console Web Red Hat OpenShift propose une interface graphique qui simplifie de nombreuses tâches administratives pour la gestion d'un cluster. En exploitant les API Kubernetes ainsi que les API d'extension OpenShift, cette console offre un environnement graphique performant. Bien que les menus, les tâches et les fonctionnalités de la console Web soient également accessibles via l'interface en ligne de commande, cette console rend plus aisées les tâches complexes inhérentes à l'administration du cluster.
+---
 
-Kubernetes dispose d'un tableau de bord Web qui n'est pas activé par défaut dans un cluster. Ce tableau de bord offre des permissions de sécurité minimales et ne prend en charge que l'authentification par tokens. De plus, il nécessite une configuration de proxy, limitant l'accès à la console Web au terminal système ayant créé le proxy. Contrairement à ces contraintes, la console Web d'OpenShift offre une expérience beaucoup plus complète.
+## Connexion à la console
 
-La console Web d'OpenShift est indépendante du tableau de bord Kubernetes et constitue un outil distinct dédié à la gestion des clusters OpenShift. En outre, les opérateurs ont la possibilité d'étendre les fonctionnalités de cette console en ajoutant des menus, des vues et des formulaires supplémentaires pour simplifier encore davantage l'administration du cluster.
+### Accéder à l'interface
 
-## Connexion a la console
+Ouvrez votre navigateur et rendez-vous à l'adresse suivante :
 
-Pour accéder à la console OpenShift, commencez par ouvrir votre navigateur web et rendez-vous à l'adresse suivante : [https://console-openshift-console.apps.neutron-sno-office.intraneutron.fr/](https://console-openshift-console.apps.neutron-sno-office.intraneutron.fr/). Une fois cette URL entrée, vous serez automatiquement redirigé vers la page de connexion d'OpenShift à l'adresse [https://oauth-openshift.apps.neutron-sno-office.intraneutron.fr](https://oauth-openshift.apps.neutron-sno-office.intraneutron.fr).
+**[https://console-openshift-console.apps.neutron-sno-office.intraneutron.fr/](https://console-openshift-console.apps.neutron-sno-office.intraneutron.fr/)**
 
-![Console](./images/console.png)
+Vous serez automatiquement redirigé vers la page d'authentification OAuth d'OpenShift. Cette redirection est normale et sécurisée.
 
-Cette redirection est normale et vous amène vers l'interface d'authentification sécurisée où vous pourrez vous connecter à la console OpenShift.
+![Page de connexion de la console OpenShift](./images/console-login.svg)
 
-Sur la page de connexion, vous verrez plusieurs options de fournisseurs d'identité (Identity Providers). Dans le cadre de cette formation, vous devez utiliser "Neutron Guest Identity Management" pour vous connecter. Sélectionnez cette option, puis entrez le nom d'utilisateur et le mot de passe qui vous ont été fournis par votre formateur. Ces identifiants vous permettront d'accéder à la console et de commencer à utiliser OpenShift. Assurez-vous de garder ces informations à portée de main pour toute la durée de votre formation, car elles seront nécessaires pour toutes les sessions d'accès à la console.
+*Page de connexion OpenShift : sélectionnez votre fournisseur d'identité pour vous authentifier.*
 
-![First login](./images/first_login.png)
+### Choisir le fournisseur d'identité
 
-### Différentes Perspectives de la Console Web
+Sur la page de connexion, plusieurs fournisseurs d'identité (Identity Providers) peuvent être proposés. Pour cette formation, sélectionnez **"Neutron Guest Identity Management"**, puis entrez :
 
-La console Web OpenShift propose deux modes principaux : Administrator et Developer. La disposition des menus et les fonctionnalités disponibles varient en fonction du mode sélectionné. En haut du menu latéral, un sélecteur de perspective permet de naviguer facilement entre les modes Administrator et Developer.
+- **Nom d'utilisateur** : le nom de votre ville suivi de `-user` (ex: `paris-user`)
+- **Mot de passe** : fourni par le formateur
 
-![First login](./images/view.png)
+:::tip Conservation des identifiants
+Notez vos identifiants quelque part d'accessible. Vous en aurez besoin à chaque fois que votre session expire, ainsi que pour la connexion via `oc` en ligne de commande.
+:::
 
-Chaque mode offre des pages et des catégories de menus spécifiquement conçues pour répondre aux besoins de l'utilisateur. Le mode Administrator est orienté vers la configuration, la gestion du cluster, les déploiements, et les opérations courantes. En revanche, le mode Developer se concentre sur la conception et le déploiement d'applications.
+:::warning Session et expiration
+Les sessions OpenShift expirent après un certain délai d'inactivité. Si vous êtes redirigé vers la page de connexion en cours d'exercice, reconnectez-vous simplement avec vos identifiants.
+:::
 
-### Vue Administrateur
+---
 
-![Admin view](./images/admin_view.png)
+## Vue d'ensemble de la console
 
-Dans la console OpenShift en mode administrateur, vous avez accès à une gamme complète d'outils pour gérer et superviser efficacement votre infrastructure. Voici un aperçu des principales fonctionnalités disponibles :
+Une fois connecté, vous arrivez sur le tableau de bord principal de la console OpenShift.
 
-* **Accueil (Home)** :
-    * Tableau de bord global avec des informations sur les alertes, l'utilisation des ressources et la santé du cluster.
+![Vue d'ensemble de la console OpenShift](./images/console-overview.svg)
 
-* **Operators** :
-    * Gestion des opérateurs installés, ajout via l'OperatorHub et surveillance des mises à jour.
+*Tableau de bord principal : accès rapide aux ressources, alertes et état du cluster.*
 
-* **Workloads** :
-    * Gestion des pods, déploiements, réplicasets, daemonsets, jobs et cron jobs.
-    * Configuration des StatefulSets pour les applications d'état.
+La console est organisée en deux grandes zones :
 
-* **Networking** :
-    * Configuration des routes pour les applications.
-    * Gestion des services, des endpoints, des ingress et des politiques réseau.
+| Zone | Description |
+|------|-------------|
+| **Barre de navigation latérale gauche** | Accès à toutes les sections de la console selon la perspective active |
+| **Zone de contenu principale** | Affichage des ressources, formulaires et tableaux de bord |
+| **Barre supérieure** | Sélecteur de perspective, notifications, accès au terminal web, profil utilisateur |
 
-* **Storage** :
-    * Gestion des volumes persistants, des claims et des classes de stockage.
-    * Surveillance de l'utilisation du stockage.
+:::info Sélecteur de perspective
+En haut du menu latéral gauche se trouve un sélecteur de **perspective**. Ce sélecteur permet de basculer entre la vue **Administrator** et la vue **Developer**. La disposition des menus change complètement selon la perspective choisie.
+:::
 
-* **Builds** :
-    * Surveillance et gestion des builds.
-    * Configuration des stratégies de build et gestion des pipelines CI/CD.
+---
 
-* **Observe** :
-    * Accès aux journaux des pods.
-    * Surveillance des métriques et des alertes.
-    * Configuration des sources de journaux.
+## Les deux perspectives de la console
 
-* **Compute** :
-    * Gestion des nœuds du cluster.
-    * Surveillance de l'utilisation des ressources des nœuds.
-    * Configuration des machines et des pools de machines.
+### Basculer entre les perspectives
 
-* **User Management** :
-    * Création et gestion des utilisateurs et des groupes.
-    * Attribution des rôles et des permissions.
-    * Configuration des fournisseurs d'identité.
+La console OpenShift propose deux modes principaux, accessibles via le sélecteur en haut du menu latéral :
 
-* **Administration** :
-    * Configuration des paramètres globaux du cluster.
-    * Gestion des mises à jour du cluster.
-    * Configuration des politiques de sécurité et des quotas.
+| Perspective | Public cible | Orientation |
+|------------|--------------|-------------|
+| **Administrator** | Administrateurs cluster, ops | Gestion de l'infrastructure, des nœuds, de la sécurité |
+| **Developer** | Développeurs, DevOps | Déploiement et suivi des applications |
 
-### Vue Développeur
+---
 
-![Dev view](./images/dev_view.png)
+## Perspective Administrateur
 
-La vue développeur de la console OpenShift est conçue pour optimiser le développement et le déploiement d'applications. Voici ce que vous pouvez faire dans cette vue :
+La perspective Administrateur donne accès à l'ensemble des ressources du cluster. Voici les sections principales :
 
-* **Topology (Topologie)** :
-    * Visualisation graphique des applications et des services.
-    * Gestion des ressources et des relations entre les composants.
+### Accueil (Home)
 
-* **Observe** :
-    * Accès aux journaux des applications.
-    * Surveillance des métriques spécifiques aux projets.
-    * Configuration des sources de journaux pour le débogage.
+Le tableau de bord global affiche :
+- L'état de santé du cluster (alertes actives, erreurs)
+- L'utilisation globale des ressources CPU et mémoire
+- Les événements récents sur le cluster
+- Les liens rapides vers les sections fréquemment utilisées
 
-* **Search (Recherche)** :
-    * Recherche de ressources spécifiques dans les projets.
-    * Filtrage par type de ressource et par étiquette.
-    * Accès rapide aux détails des ressources trouvées.
+### Workloads
 
-* **Builds** :
-    * Gestion et surveillance des builds de projet.
-    * Configuration des stratégies de build spécifiques au projet.
-    * Visualisation des pipelines CI/CD.
+Section centrale pour la gestion des charges de travail applicatives :
 
-* **Environments (Environnements)** :
-    * Gestion des configurations d'environnement pour les applications.
-    * Définition des variables d'environnement.
-    * Surveillance des configurations d'environnement.
+| Ressource | Description |
+|-----------|-------------|
+| Pods | Unités d'exécution de base, chaque pod contient un ou plusieurs conteneurs |
+| Deployments | Gestion déclarative du déploiement et du cycle de vie des pods |
+| ReplicaSets | Garantie qu'un nombre défini de pods est en cours d'exécution |
+| StatefulSets | Pour les applications stateful nécessitant des identités stables |
+| DaemonSets | Un pod par nœud (agents de monitoring, collecteurs de logs) |
+| Jobs / CronJobs | Tâches ponctuelles ou planifiées |
 
-* **Helm** :
-    * Accès à Helm Charts pour déployer des applications.
-    * Gestion des releases Helm.
-    * Surveillance des applications déployées via Helm.
+### Networking
 
-* **Project (Projet)** :
-    * Vue d'ensemble des ressources du projet.
-    * Gestion des quotas et des limites de ressources.
-    * Surveillance de l'utilisation des ressources au niveau du projet.
+Configuration de la connectivité réseau des applications :
 
-* **Config Maps** :
-    * Création et gestion des ConfigMaps.
-    * Utilisation des ConfigMaps pour stocker des configurations de données.
-    * Intégration des ConfigMaps dans les applications.
+- **Services** : point d'accès stable vers un ensemble de pods
+- **Routes** : exposition des services vers l'extérieur du cluster avec URL publique
+- **Ingress** : alternative standard Kubernetes pour l'exposition HTTP
+- **NetworkPolicies** : règles de pare-feu entre namespaces et pods
 
-* **Secrets** :
-    * Création et gestion des secrets.
-    * Utilisation des secrets pour stocker des informations sensibles.
-    * Intégration des secrets dans les applications.
+### Storage
+
+Gestion du stockage persistant :
+
+- **PersistentVolumes (PV)** : volumes de stockage disponibles sur le cluster
+- **PersistentVolumeClaims (PVC)** : demandes de stockage par les applications
+- **StorageClasses** : définition des types de stockage disponibles (SSD, HDD, NFS…)
+
+### Observe
+
+Observabilité et supervision :
+
+- **Metrics** : graphiques de consommation CPU, mémoire, réseau
+- **Alerts** : règles d'alerte Prometheus et alertes actives
+- **Logs** : accès aux journaux des pods directement depuis la console
+
+### Compute
+
+Gestion des nœuds d'infrastructure :
+
+- **Nodes** : liste et état des nœuds du cluster
+- **MachineSets** : groupes de machines permettant le scaling de l'infrastructure
+- **Machines** : représentation individuelle des machines du cluster
+
+### User Management
+
+Gestion des identités et des permissions :
+
+- **Users / Groups** : création et gestion des utilisateurs et groupes
+- **RoleBindings** : attribution de rôles à des utilisateurs ou groupes
+- **ServiceAccounts** : comptes de service pour les applications
+
+### Operators
+
+Gestion des opérateurs Kubernetes :
+
+- **OperatorHub** : catalogue d'opérateurs certifiés disponibles à l'installation
+- **Installed Operators** : opérateurs actuellement déployés sur le cluster
+- **Operator conditions** : état de santé des opérateurs installés
+
+### Administration
+
+Configuration globale du cluster :
+
+- **Cluster Settings** : version du cluster, canal de mise à jour
+- **Namespaces** : liste et gestion de tous les namespaces
+- **Resource Quotas** : limites de ressources par namespace
+- **Limit Ranges** : limites par pod et par conteneur
+- **CustomResourceDefinitions (CRD)** : types de ressources personnalisés
+
+---
+
+## Perspective Développeur
+
+La perspective Developer est conçue pour les développeurs qui déploient et surveillent des applications. Elle est plus simple et plus visuelle que la perspective administrateur.
+
+![Vue Développeur — Topology](./images/console-developer-topology.svg)
+
+*Vue Topology en perspective Developer : visualisation graphique des applications et de leurs relations.*
+
+### Topology (Topologie)
+
+La vue Topology est la fonctionnalité phare de la perspective Developer. Elle affiche une représentation graphique de toutes les ressources déployées dans un projet :
+
+- Chaque application est représentée par un nœud visuel
+- Les relations entre services sont matérialisées par des liens
+- Le statut de chaque déploiement (running, failed, building) est indiqué visuellement
+- Un clic sur un nœud ouvre un panneau latéral avec les détails et les actions disponibles
+
+:::tip Déploiement depuis la Topology
+Depuis la vue Topology, il est possible d'ajouter de nouvelles applications directement en cliquant sur le bouton **"+ Add"**. OpenShift propose plusieurs méthodes : depuis Git, depuis une image existante, depuis le catalogue, ou via un fichier YAML.
+:::
+
+### Observe (Développeur)
+
+Version allégée de l'observabilité, centrée sur le projet courant :
+
+- Métriques CPU et mémoire des pods du projet
+- Logs des conteneurs en temps réel
+- Événements du namespace
+
+### Builds
+
+Gestion des builds spécifiques au projet :
+
+- Suivi des builds en cours et de leur historique
+- Configuration des BuildConfigs (source, stratégie, déclencheurs)
+- Visualisation des pipelines Tekton
+
+### Helm
+
+Déploiement d'applications via Helm Charts :
+
+- Accès au catalogue de charts disponibles
+- Installation et configuration de releases Helm
+- Suivi et mise à jour des applications déployées via Helm
+
+### Project
+
+Vue de gestion du projet courant :
+
+- Quotas et limites de ressources
+- Membres du projet et leurs rôles
+- Labels et annotations du namespace
+
+---
+
+## Navigation rapide
+
+Voici un récapitulatif des sections les plus utiles selon votre rôle :
+
+| Action | Perspective | Chemin dans la console |
+|--------|------------|------------------------|
+| Voir tous les pods | Administrator | Workloads > Pods |
+| Créer un déploiement | Developer | +Add > Import from Git |
+| Visualiser l'architecture | Developer | Topology |
+| Voir les logs d'un pod | Administrator ou Developer | Workloads > Pods > [pod] > Logs |
+| Exposer une application | Administrator | Networking > Routes |
+| Créer un PVC | Administrator | Storage > PersistentVolumeClaims |
+| Voir les métriques | Administrator | Observe > Metrics |
+| Gérer les utilisateurs | Administrator | User Management > Users |
+| Accéder au terminal d'un pod | Administrator | Workloads > Pods > [pod] > Terminal |
+| Voir les événements | Administrator | Home > Events |
+
+:::info Raccourci clavier
+La console OpenShift intègre une barre de recherche globale accessible avec le raccourci **Ctrl+K** (ou **Cmd+K** sur Mac). Elle permet de rechercher n'importe quelle ressource par nom, type ou namespace sans naviguer dans les menus.
+:::
+
+---
 
 ## Conclusion
 
-La console web d'OpenShift est un outil puissant et intuitif pour gérer vos projets, déployer des applications et surveiller l'état de votre cluster. Familiarisez-vous avec ses fonctionnalités pour tirer le meilleur parti de votre environnement OpenShift. Dans la prochaine section, nous réaliserons un exercice guidé pour explorer la console en détail et effectuer des tâches courantes.
+La console web d'OpenShift est un outil puissant qui centralise la gestion du cluster, le déploiement des applications et la supervision des ressources. La distinction entre perspective Administrator et perspective Developer vous permet de toujours avoir une interface adaptée à votre contexte de travail. Dans la prochaine section, vous réaliserez un exercice guidé pour explorer la console en autonomie.

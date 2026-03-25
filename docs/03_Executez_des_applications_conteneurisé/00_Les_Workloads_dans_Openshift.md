@@ -1,71 +1,182 @@
 # Les Workloads dans OpenShift
 
-Dans cette section, nous allons explorer les différents types de workloads dans OpenShift. OpenShift offre plusieurs types de ressources pour gérer et déployer des applications. Ces ressources, appelées workloads, sont essentielles pour orchestrer et maintenir les applications en production.
+Dans cette section, nous allons explorer les différents types de workloads disponibles dans OpenShift. Ces ressources, appelées **workloads**, constituent la base de l'orchestration des applications conteneurisées. Comprendre leurs différences et leurs cas d'usage respectifs est indispensable pour concevoir des architectures robustes et évolutives.
 
-### Objectifs de la Section
+---
 
-![Workloads section](./images/workloads-section.png)
+## Objectifs de la section
 
-L'objectif principal est de comprendre les différents types de workloads dans OpenShift, notamment les déploiements, les configurations de déploiement, les réplicas, les ensembles de réplicas, les daemonset et les statefulset. Nous allons également illustrer les concepts et les différences entre ces ressources et apprendre à les utiliser pour gérer des applications dans un cluster OpenShift.
+À la fin de cette section, vous serez capable de :
 
-### Deployments
+- Identifier les différents types de workloads proposés par OpenShift et Kubernetes
+- Distinguer les rôles respectifs des Deployments, DaemonSets, StatefulSets et ReplicaSets
+- Choisir le type de workload adapté à un besoin applicatif donné
+- Comprendre les relations entre ces ressources et le cycle de vie des pods
 
-Les déploiements sont une ressource Kubernetes qui gère la mise à jour déclarative des applications. Ils permettent de décrire l'état souhaité pour vos pods et réplicas, et le contrôleur de déploiement ajuste l'état réel pour correspondre à cet état souhaité.
+---
 
-Les déploiements offrent plusieurs fonctionnalités clés. Ils permettent l'utilisation de différentes stratégies de déploiement, telles que les déploiements en rollout et les déploiements de recréation, pour minimiser les temps d'arrêt. En cas de problème, ils permettent des rollbacks faciles à une version précédente. De plus, les mises à jour progressives des pods assurent que l'application reste disponible pendant les mises à jour.
+## Vue d'ensemble des workloads
 
-![deployment](./images/deployment.svg)
+OpenShift repose sur Kubernetes et hérite de l'ensemble de ses primitives de déploiement. Un **workload** est une abstraction qui décrit comment des pods doivent être créés, maintenus et mis à jour dans le cluster.
 
+![Comparaison des types de workloads OpenShift](./images/deployment-vs-daemonset-vs-statefulset.svg)
 
+*Représentation des trois principaux types de contrôleurs de workloads : Deployment, DaemonSet et StatefulSet.*
 
-### DeploymentConfig
+:::info Notion de contrôleur
+Un contrôleur est une boucle de réconciliation qui surveille en permanence l'état du cluster et prend les mesures nécessaires pour que l'état réel corresponde à l'état déclaré dans le manifest YAML. Chaque type de workload est piloté par son propre contrôleur.
+:::
 
-Les `DeploymentConfig` sont spécifiques à OpenShift et offrent des fonctionnalités avancées pour le déploiement d'applications. Ces configurations permettent d'utiliser des triggers basés sur les modifications d'image, de configuration, etc. Cela permet de déclencher automatiquement un nouveau déploiement lorsqu'une image ou une configuration est mise à jour. De plus, les stratégies de déploiement sont personnalisables selon les besoins spécifiques de l'application.
+---
 
-Tandis que les déploiements et les configurations de déploiement se concentrent sur la gestion des versions des applications, les réplicas et les ensembles de réplicas jouent un rôle crucial dans la gestion de la disponibilité des pods.
+## Les types de workloads en détail
 
-NOTE: Les deploymentConfig sont maintenant deprecated et seront supprimé dans une prochaine version d'Openshift
+### Pod
 
-### Replicas
+Le **Pod** est l'unité atomique de déploiement dans Kubernetes. Il regroupe un ou plusieurs conteneurs qui partagent le même réseau et les mêmes volumes. En pratique, on ne crée jamais de pods directement en production : on passe toujours par un contrôleur de niveau supérieur (Deployment, DaemonSet, StatefulSet) pour garantir la résilience.
 
-Les réplicas garantissent qu'un nombre spécifié de pods est en cours d'exécution à tout moment. Ils sont une partie intégrante des déploiements et des ensembles de réplicas. Cette fonctionnalité est essentielle pour assurer la scalabilité de l'application, en permettant d'ajuster le nombre de réplicas en fonction de la charge. Elle assure également une tolérance aux pannes, en maintenant un certain nombre de pods en cours d'exécution même en cas de défaillance de certains d'entre eux.
+:::warning Ne pas créer de pods nus en production
+Un pod créé directement (`kind: Pod`) n'est pas recréé automatiquement en cas de panne du nœud. Utilisez toujours un contrôleur de workload pour assurer la disponibilité.
+:::
 
-### ReplicaSets
+---
 
-Les `ReplicaSets` s'assurent qu'un nombre spécifié de réplicas d'un pod est en cours d'exécution à tout moment. Ils remplacent les `ReplicationControllers` et sont souvent utilisés par les déploiements pour gérer les réplicas. Les `ReplicaSets` utilisent des sélecteurs de pods pour gérer quels pods sont surveillés et maintenus, assurant ainsi que le bon nombre de réplicas est toujours en cours d'exécution.
+### Deployment
 
-Les ensembles de réplicas sont utiles pour maintenir des instances de pods, mais qu'en est-il des applications nécessitant un pod par nœud ? C'est là que les DaemonSets entrent en jeu.
+Le **Deployment** est le workload de référence pour les applications **stateless**. Il permet de déclarer l'état souhaité (nombre de réplicas, image de conteneur, ressources) et délègue à son contrôleur la responsabilité d'atteindre et de maintenir cet état.
 
+Fonctionnalités clés :
 
-### DaemonSets
+- Mise à jour progressive des pods (rolling update) avec contrôle fin du rythme de déploiement
+- Retour arrière instantané vers une révision précédente (rollback)
+- Scaling horizontal simple par modification du nombre de réplicas
+- Gestion d'un **ReplicaSet** sous-jacent pour garantir le nombre de pods actifs
 
-Les `DaemonSets` garantissent qu'une copie d'un pod tourne sur chaque nœud (ou un sous-ensemble de nœuds) dans le cluster. Cette fonctionnalité est particulièrement utile pour des tâches telles que le monitoring ou la gestion des logs, où chaque nœud doit exécuter un pod spécifique. Les DaemonSets simplifient la gestion en assurant une présence uniforme des pods sur les nœuds requis.
+:::tip Cas d'usage typique
+Le Deployment est adapté pour toute application web, API REST, worker de traitement de messages ou microservice qui ne maintient pas d'état local entre les requêtes.
+:::
 
-Alors que les DaemonSets assurent une copie de pod par nœud, certaines applications nécessitent un état persistant entre les réplicas. C'est là que les StatefulSets interviennent.
+---
 
-![daemomset](./images/daemonset.svg)
+### DeploymentConfig (OpenShift)
 
-### StatefulSets
+Le **DeploymentConfig** est un objet propre à OpenShift, antérieur au Deployment Kubernetes. Il ajoute des fonctionnalités spécifiques comme les **triggers** basés sur les changements d'image ou de configuration, et des **hooks** de pré/post-déploiement.
 
-Les `StatefulSets` sont utilisés pour déployer et gérer des applications avec un état persistant, telles que des bases de données. Ils offrent plusieurs fonctionnalités importantes. Chaque pod dans un StatefulSet a un identifiant unique et stable, ce qui est essentiel pour des applications qui nécessitent une identité stable. De plus, les StatefulSets gèrent le stockage persistant en associant des volumes persistants spécifiques aux pods. Enfin, ils assurent une mise à jour et un scaling contrôlés, garantissant une séquence ordonnée pour le déploiement, la mise à jour et la suppression des pods.
+:::warning Dépréciation des DeploymentConfig
+Les `DeploymentConfig` sont désormais **dépréciés** dans les versions récentes d'OpenShift. Red Hat recommande de migrer vers les `Deployment` Kubernetes standard, qui couvrent l'ensemble des besoins courants. Les DeploymentConfig seront supprimés dans une prochaine version majeure.
+:::
 
-![statefulset](./images/statefulset.svg)
+---
 
-### Tableau récapitulatif
+### ReplicaSet
 
-| Objet             | Description                                                                                               | Utilisation principale                                               |
-|-------------------|-----------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------|
-| **Pod**           | Unité de base de déploiement avec un ou plusieurs conteneurs.                                             | Exécution directe des conteneurs.                                    |
-| **StatefulSet**   | Contrôleur pour applications stateful avec ordonnancement et stockage stable.                             | Bases de données, systèmes distribués en cluster.                   |
-| **DaemonSet**     | Contrôleur pour assurer qu'un Pod est exécuté sur chaque nœud.                                            | Agents de logs, collecteurs de métriques, outils de sécurité.        |
-| **ReplicaSet**    | Contrôleur pour garantir un nombre spécifié de répliques de Pods.                                         | Maintien d'un nombre fixe de Pods.                                   |
-| **Deployment**    | Contrôleur pour déploiements déclaratifs avec mise à jour et rollback.                                    | Déploiement et mise à jour d'applications.                           |
-| **DeploymentConfig** | Objet OpenShift pour déploiements avec stratégies et hooks supplémentaires.                             | Déploiement d'applications avec contrôle et flexibilité avancés.     |
+Le **ReplicaSet** est le contrôleur chargé de garantir qu'un nombre précis de réplicas d'un pod est actif à tout instant. Il est quasi exclusivement utilisé de manière indirecte, via un Deployment. Le Deployment crée et gère des ReplicaSets successifs pour orchestrer les mises à jour progressives.
 
-Chaque type de contrôleur a des cas d'utilisation spécifiques et offre différents niveaux de gestion et de flexibilité pour le déploiement et la gestion des applications conteneurisées dans un cluster Kubernetes.
+:::info ReplicaSet vs ReplicationController
+Le ReplicaSet remplace l'ancien `ReplicationController`. Il supporte des sélecteurs de labels basés sur des expressions (`matchExpressions`), offrant plus de flexibilité. Dans la pratique, on ne manipule jamais un ReplicaSet directement.
+:::
 
-![deployment vs statefulset vs daemonset](./images/deployment-vs-daemonset-vs-statefulset.svg)
+---
 
-### Conclusion
+### DaemonSet
 
-Dans cette section, nous avons exploré les différents types de workloads dans OpenShift, en mettant l'accent sur les déploiements, les configurations de déploiement, les réplicas, les ensembles de réplicas, les ensembles de démons et les ensembles avec état. Comprendre et maîtriser ces concepts est crucial pour administrer et déployer des applications robustes et évolutives dans un environnement OpenShift.
+Le **DaemonSet** garantit qu'**une instance d'un pod** est exécutée sur **chaque nœud** du cluster (ou sur un sous-ensemble de nœuds défini par un sélecteur). Lorsqu'un nouveau nœud rejoint le cluster, le pod est automatiquement schedulé dessus. Lorsqu'un nœud est retiré, le pod est supprimé.
+
+Cas d'usage typiques :
+
+- Agents de collecte de logs (Fluentd, Filebeat)
+- Exporters de métriques (Prometheus Node Exporter)
+- Agents de sécurité et de détection d'intrusion (Falco)
+- Plugins réseau (CNI) et agents de stockage
+
+---
+
+### StatefulSet
+
+Le **StatefulSet** est conçu pour les applications **stateful** qui nécessitent une identité stable, un stockage persistant dédié par instance, et un ordonnancement séquentiel du déploiement et de la suppression des pods.
+
+Contrairement au Deployment, chaque pod d'un StatefulSet possède :
+
+- Un nom stable et prévisible (ex. `postgres-0`, `postgres-1`)
+- Un **Persistent Volume Claim** (PVC) dédié qui lui survit
+- Un ordonnancement garanti lors des opérations de scaling et de mise à jour
+
+---
+
+## Tableau comparatif des workloads
+
+| Ressource | Type d'application | Identité stable | Stockage persistant par pod | Déploiement séquentiel | Nœud cible |
+|---|---|---|---|---|---|
+| **Pod** | Toutes (usage ponctuel) | Non | Non | N/A | Quelconque |
+| **ReplicaSet** | Stateless | Non | Non | Non | Quelconque |
+| **Deployment** | Stateless | Non | Non | Non | Quelconque |
+| **DeploymentConfig** | Stateless (OpenShift) | Non | Non | Non | Quelconque |
+| **DaemonSet** | Agents système | Non | Non | Non | Tous les nœuds |
+| **StatefulSet** | Stateful | Oui | Oui | Oui | Quelconque |
+
+---
+
+## Quand utiliser quel workload ?
+
+Le choix du bon type de workload conditionne la résilience, la scalabilité et la maintenabilité de l'application. Le tableau suivant propose des critères de sélection pratiques.
+
+| Besoin | Workload recommandé | Justification |
+|---|---|---|
+| Déployer une API REST ou une application web | **Deployment** | Stateless, scaling horizontal simple, rolling update natif |
+| Déployer une base de données PostgreSQL ou MySQL | **StatefulSet** | Identité stable, PVC dédié, ordonnancement séquentiel |
+| Déployer un cluster Kafka ou Elasticsearch | **StatefulSet** | Chaque instance a un rôle unique et des données propres |
+| Collecter les logs sur tous les nœuds | **DaemonSet** | Présence garantie sur chaque nœud, y compris les nouveaux |
+| Surveiller les métriques système de chaque nœud | **DaemonSet** | Accès aux ressources du nœud (système de fichiers, réseau) |
+| Déployer un plugin réseau (CNI) | **DaemonSet** | Doit être présent sur tous les nœuds dès leur ajout |
+| Exécuter un job ponctuel ou périodique | **Job / CronJob** | Cycle de vie limité, pas de redémarrage automatique |
+
+:::tip Stateless vs Stateful : la question clé
+Avant de choisir un workload, posez-vous la question suivante : **l'application conserve-t-elle un état local entre deux requêtes ou entre deux redémarrages ?**
+- Si non → **Deployment**
+- Si oui → **StatefulSet**
+
+Pour les agents système devant couvrir l'ensemble du cluster → **DaemonSet**.
+:::
+
+---
+
+## Relations entre les ressources
+
+```
+Deployment
+    └── ReplicaSet (géré automatiquement)
+            └── Pod (0..N réplicas)
+
+DaemonSet
+    └── Pod (1 par nœud éligible)
+
+StatefulSet
+    └── Pod-0 ←→ PVC-0
+    └── Pod-1 ←→ PVC-1
+    └── Pod-N ←→ PVC-N
+```
+
+Un **Deployment** gère un ou plusieurs **ReplicaSets** au fil des mises à jour. À un instant donné, un seul ReplicaSet est actif ; les anciens sont conservés pour permettre les rollbacks. Chaque ReplicaSet gère un ensemble de **Pods** identiques et interchangeables.
+
+Un **StatefulSet** gère directement ses pods, chacun ayant une identité unique et un stockage dédié. Les PVC ne sont pas supprimés lors du scaling vers le bas, préservant ainsi les données.
+
+---
+
+## Tableau récapitulatif complet
+
+| Objet | Description | Utilisation principale |
+|---|---|---|
+| **Pod** | Unité de base avec un ou plusieurs conteneurs partageant réseau et volumes. | Exécution ponctuelle, rarement en production seul. |
+| **ReplicaSet** | Garantit un nombre fixe de réplicas de pods actifs. | Utilisé indirectement via les Deployments. |
+| **Deployment** | Gestion déclarative des applications stateless avec rolling update et rollback. | Applications web, APIs, microservices. |
+| **DeploymentConfig** | Objet OpenShift deprecated avec triggers et hooks avancés. | Héritage ; migration vers Deployment recommandée. |
+| **DaemonSet** | Un pod par nœud éligible, mis à jour de façon contrôlée. | Agents de monitoring, logs, sécurité, réseau. |
+| **StatefulSet** | Pods avec identité stable, PVC dédiés et ordonnancement séquentiel. | Bases de données, clusters distribués, brokers de messages. |
+
+---
+
+:::info Pour aller plus loin
+Les sections suivantes de ce module détaillent le fonctionnement et la configuration de chaque type de workload :
+- **Section 02** : Deployments et DaemonSets — stratégies de mise à jour, rolling update, exemples YAML complets
+- **Section 04** : StatefulSets — identité stable, volumeClaimTemplates, cas d'usage avec bases de données
+:::

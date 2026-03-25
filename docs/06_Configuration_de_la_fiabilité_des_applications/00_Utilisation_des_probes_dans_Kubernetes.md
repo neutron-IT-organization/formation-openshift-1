@@ -1,108 +1,265 @@
-# Sondes d’intégrité des applications dans OpenShift
+# Sondes d'intégrité des applications dans OpenShift
 
 ## Introduction
 
-Dans l'environnement dynamique des conteneurs, la disponibilité et la performance des applications sont primordiales. Les sondes d'intégrité (ou *probes*) dans OpenShift jouent un rôle crucial dans la gestion de cette disponibilité. Elles permettent à Kubernetes d'évaluer l'état de santé d'une application, d'automatiser les redémarrages en cas de défaillance et d'assurer que le trafic est dirigé uniquement vers des pods en bon état de fonctionnement. Cet article se penche sur le fonctionnement des sondes d'intégrité, leur importance dans le cycle de vie des applications et comment les configurer efficacement.
+Dans un environnement de conteneurs orchestré par Kubernetes et OpenShift, les applications peuvent se retrouver dans des états défaillants sans pour autant que le processus principal ait planté. Une application peut être démarrée et en cours d'exécution tout en étant incapable de traiter des requêtes : fuite mémoire progressive, deadlock applicatif, dépendance externe indisponible, ou encore phase d'initialisation longue. Sans mécanisme de supervision, ces situations dégradent silencieusement le service.
 
-## Rôle des Sondes d’intégrité
+Les **sondes d'intégrité** (ou *health probes*) sont des mécanismes natifs de Kubernetes permettant à l'orchestrateur d'évaluer régulièrement l'état de santé de chaque conteneur. Selon le résultat de ces vérifications, Kubernetes peut décider de redémarrer un pod, de l'exclure temporairement du trafic entrant, ou d'attendre qu'il soit pleinement opérationnel avant de le solliciter.
 
-Les sondes d'intégrité sont des mécanismes permettant à Kubernetes de vérifier l'état d'un pod à intervalles réguliers. Elles sont essentielles pour plusieurs raisons :
+Cette page décrit les trois types de sondes disponibles, les méthodes de test associées, les paramètres de configuration, et les bonnes pratiques à adopter pour des applications robustes.
 
-### 1. Détéction rapide des défaillances
+---
 
-Lorsque des pods échouent, les sondes d'intégrité permettent à Kubernetes de détecter rapidement la défaillance et d'agir en conséquence, par exemple en redémarrant automatiquement le pod. Cela réduit le temps d'indisponibilité et garantit que les utilisateurs peuvent continuer à interagir avec l'application sans interruption prolongée.
+## Vue d'ensemble des trois types de sondes
 
-### 2. Basculement et équilibrage de charge
+![Diagramme Liveness vs Readiness probe](./images/probes-diagram.svg)
 
-Les sondes aident également à diriger le trafic uniquement vers les pods qui fonctionnent correctement. Si un pod échoue à répondre à une sonde d'intégrité, Kubernetes le retire automatiquement de la rotation de service, empêchant ainsi les requêtes de lui être envoyées. Cela assure une meilleure répartition de la charge entre les pods sains, optimisant ainsi la performance de l'application.
+*Diagramme illustrant le cycle de vie d'un pod et l'action de chaque type de sonde : la Startup probe protège le démarrage, la Liveness probe surveille l'exécution, la Readiness probe contrôle l'accessibilité au trafic.*
 
-### 3. Surveillance des performances
+Le tableau suivant résume les trois types de sondes, leur comportement en cas d'échec et leurs cas d'usage typiques :
 
-Les sondes d'intégrité jouent un rôle clé dans la surveillance des performances des applications. Elles permettent de détecter les problèmes potentiels avant qu'ils n'affectent les utilisateurs. En surveillant les conditions d'échec des pods, les administrateurs peuvent réagir rapidement aux problèmes et prévenir les interruptions de service.
+| Type de sonde | Description | Comportement en cas d'échec | Cas d'usage typique |
+|---|---|---|---|
+| **Liveness** | Vérifie que le conteneur est vivant et fonctionnel | Kubernetes **redémarre** le pod | Application bloquée, deadlock, fuite mémoire |
+| **Readiness** | Vérifie que le conteneur est prêt à recevoir du trafic | Kubernetes **retire le pod du Service** (sans redémarrage) | Chargement initial de données, connexion à une BDD |
+| **Startup** | Vérifie que le conteneur a bien démarré (phase initiale uniquement) | Kubernetes **redémarre** le pod si le délai est dépassé | Applications avec démarrage lent (JVM, migrations) |
 
-### 4. Mise à l’échelle efficace
+### Sonde Liveness
 
-Lorsqu'il s'agit de mise à l'échelle des applications, les sondes d'intégrité aident Kubernetes à déterminer quand un nouveau réplica est prêt à recevoir des demandes. Cela permet une mise à l'échelle automatique des ressources, garantissant que l'application dispose toujours de la capacité nécessaire pour traiter le trafic entrant.
+La sonde Liveness répond à la question : "Ce conteneur est-il toujours en vie ?". Elle s'exécute tout au long du cycle de vie du pod à intervalles réguliers. Son objectif est de détecter les états d'exécution pathologiques qui ne provoquent pas l'arrêt du processus : une boucle infinie, un thread en deadlock, ou une accumulation mémoire qui rend le serveur inopérant.
 
-## Types de Sondes
+Lorsque la sonde échoue un nombre de fois consécutives supérieur au seuil configuré (`failureThreshold`), Kubernetes met fin au conteneur et le redémarre selon la politique `restartPolicy` du pod (par défaut `Always`).
 
-Kubernetes propose trois types principaux de sondes d'intégrité : les sondes Liveness, Readiness et Startup. Chaque type remplit un rôle distinct dans la gestion de l'état des applications.
+**Exemple — Liveness probe HTTP GET :**
 
-Voici les paragraphes réécrits avec plus de détails :
+```yaml
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 8080
+  initialDelaySeconds: 20
+  periodSeconds: 10
+  failureThreshold: 3
+  timeoutSeconds: 5
+```
 
-### 1. Sondes Liveness
+### Sonde Readiness
 
-Les sondes Liveness sont des mécanismes cruciaux pour surveiller la santé des conteneurs dans un environnement Kubernetes. Elles permettent de déterminer si un conteneur fonctionne toujours comme prévu en effectuant des vérifications régulières tout au long de la durée de vie de l'application. Si, après un certain nombre de tentatives échouées, une sonde Liveness ne reçoit pas de réponse positive, Kubernetes prend l'initiative de redémarrer automatiquement le pod concerné. Cela est particulièrement bénéfique pour les applications qui peuvent rencontrer des problèmes, tels que des états bloqués ou non réactifs, souvent dus à des exceptions non gérées ou à des fuites de mémoire. En redémarrant le pod, Kubernetes rétablit rapidement le service, minimisant ainsi les interruptions et garantissant une disponibilité continue sans nécessiter d'intervention humaine. Ce mécanisme d'auto-réparation contribue à maintenir un niveau élevé de fiabilité et de résilience des applications déployées.
+La sonde Readiness répond à la question : "Ce conteneur est-il prêt à servir des requêtes ?". Elle contrôle si un pod doit être inclus dans les endpoints d'un Service. Un pod dont la sonde Readiness échoue reste en cours d'exécution mais est retiré de la rotation de charge : aucune nouvelle requête ne lui est envoyée jusqu'à ce que la sonde repasse à l'état réussi.
 
-### 2. Sondes Readiness
+Ce mécanisme est indispensable pour les mises à jour progressives (*rolling updates*) : un nouveau pod n'est intégré au service qu'une fois déclaré prêt, garantissant ainsi une transition sans interruption.
 
-Les sondes Readiness jouent un rôle essentiel dans la gestion de la disponibilité des applications en vérifiant si un pod est prêt à recevoir du trafic utilisateur. Lorsque la sonde Readiness échoue, Kubernetes retire temporairement le pod du service, empêchant ainsi le routage du trafic vers une application qui n'est pas prête à gérer les demandes entrantes. Ce mécanisme est particulièrement important pour les applications qui peuvent nécessiter un certain temps de préparation avant d'être opérationnelles, comme lors de l'établissement de connexions initiales avec des bases de données, de l'exécution de tâches de démarrage longues ou de la finalisation de configurations nécessaires. En retirant le pod du service pendant cette période de préparation, Kubernetes contribue à éviter les erreurs et les expériences utilisateur négatives. Une fois que la sonde Readiness renvoie une réponse positive, le pod est réintégré au service, garantissant ainsi une transition fluide pour les utilisateurs finaux et un service fiable.
+**Exemple — Readiness probe HTTP GET :**
 
-### 3. Sondes Startup
+```yaml
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  failureThreshold: 6
+  successThreshold: 1
+```
 
-Les sondes Startup sont spécifiquement conçues pour gérer les applications dont le processus de démarrage est long ou complexe. Contrairement aux sondes Liveness et Readiness, qui sont appelées à intervalles réguliers tout au long de la vie d'un pod, les sondes Startup ne sont invoquées qu'une seule fois, lors du démarrage initial de l'application. Si la sonde échoue après un temps prédéfini, Kubernetes redémarre le pod. Ce mécanisme permet de garantir que les sondes Liveness restent réactives et ne soient pas submergées par des vérifications incessantes pendant la phase de démarrage, ce qui pourrait fausser les résultats. En intégrant des sondes Startup, les développeurs peuvent mieux gérer les applications qui nécessitent un temps de préparation prolongé, comme celles qui effectuent des initialisations complexes ou qui chargent des données critiques avant de commencer à traiter les requêtes. Cela permet non seulement d'améliorer la stabilité des applications, mais aussi d'optimiser l'expérience utilisateur en s'assurant que les services ne sont disponibles qu'une fois pleinement opérationnels.
+### Sonde Startup
 
-![Probes](./images/Probes.png)
+La sonde Startup répond à la question : "Le conteneur a-t-il fini de démarrer ?". Elle ne s'exécute que pendant la phase de démarrage du pod. Tant qu'elle n'a pas réussi, les sondes Liveness et Readiness sont **désactivées**. Une fois qu'elle réussit, elle disparaît et laisse place aux deux autres.
 
-## Types de Test
+:::info Protection du démarrage par la Startup probe
+Sans sonde Startup, une application dont le démarrage prend 60 secondes sera immanquablement tuée par la sonde Liveness si celle-ci est configurée avec `initialDelaySeconds: 20` et `failureThreshold: 3`. La sonde Startup résout ce problème en accordant un délai généreux au démarrage (`failureThreshold * periodSeconds`) sans assouplir la surveillance en production. Par exemple, `failureThreshold: 30` + `periodSeconds: 10` accorde jusqu'à 5 minutes au démarrage, tout en maintenant une sonde Liveness stricte (10 secondes) une fois l'application opérationnelle.
+:::
 
-Lors de la configuration des sondes d'intégrité, il est crucial de choisir le type de test approprié. Kubernetes propose plusieurs méthodes pour évaluer l'état des conteneurs :
+**Exemple — Startup probe pour une application JVM :**
 
-### 1. HTTP GET
+```yaml
+startupProbe:
+  httpGet:
+    path: /healthz
+    port: 8080
+  failureThreshold: 30
+  periodSeconds: 10
+```
 
-Ce type de sonde envoie une requête HTTP à un point de terminaison spécifié de l'application. La sonde réussit si le serveur renvoie un code de réponse HTTP compris entre 200 et 399. Ce type de test est idéal pour les applications web, car il permet de vérifier la réponse de l'application à des requêtes réelles.
+---
 
-### 2. Commande de conteneur
+## Méthodes de test disponibles
 
-Pour ce type de sonde, Kubernetes exécute une commande spécifiée à l'intérieur du conteneur. Si la commande renvoie un code d'état 0, le test est considéré comme réussi. Ce type de test peut être utilisé pour vérifier l'état interne d'une application, en exécutant des scripts de diagnostic ou d'autres commandes.
+Kubernetes propose trois mécanismes pour effectuer les vérifications des sondes. Chaque méthode s'adapte à un type d'application différent :
 
-### 3. Socket TCP
+| Méthode | Description | Critère de succès | Usage recommandé |
+|---|---|---|---|
+| **HTTP GET** | Envoie une requête HTTP(S) à un endpoint du conteneur | Code de réponse entre 200 et 399 | Applications web, APIs REST, microservices |
+| **TCP Socket** | Tente d'établir une connexion TCP sur un port | Connexion établie avec succès | Bases de données, brokers de messages, services non-HTTP |
+| **Exec Command** | Exécute une commande dans le conteneur | Code de retour 0 | Scripts de vérification personnalisés, outils CLI embarqués |
 
-Ce type de test vérifie si une connexion TCP peut être établie avec le conteneur. Le test réussit uniquement si la connexion est réussie, ce qui est utile pour s'assurer que l'application écoute sur le bon port.
+### HTTP GET
 
-## Horaires et Seuils
+```yaml
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 8080
+    httpHeaders:
+    - name: X-Health-Check
+      value: "true"
+```
 
-La configuration des sondes d'intégrité nécessite une attention particulière aux paramètres de minutage et de seuils. Deux variables clés à prendre en compte sont :
+### TCP Socket
 
-- **periodSeconds** : Ce paramètre détermine la fréquence à laquelle la sonde est exécutée. Un intervalle trop court peut conduire à une surcharge inutile des ressources, tandis qu'un intervalle trop long pourrait retarder la détection des problèmes.
+```yaml
+readinessProbe:
+  tcpSocket:
+    port: 5432
+  initialDelaySeconds: 10
+  periodSeconds: 5
+```
 
-- **failureThreshold** : Ce paramètre définit le nombre d'échecs consécutifs nécessaires avant que la sonde soit considérée comme échouée. Par exemple, une sonde avec une valeur de `failureThreshold` de 3 et `periodSeconds` de 5 peut permettre jusqu'à 15 secondes avant de déclencher une action corrective. Cette configuration offre un équilibre entre la réactivité et la tolérance aux pannes temporaires.
+### Exec Command
 
-## Configuration des Sondes
+```yaml
+livenessProbe:
+  exec:
+    command:
+    - /bin/sh
+    - -c
+    - "pg_isready -U postgres"
+  initialDelaySeconds: 30
+  periodSeconds: 10
+```
 
-Les sondes d'intégrité peuvent être configurées directement dans les fichiers YAML des ressources Kubernetes, telles que les déploiements. Voici un exemple de configuration d'une sonde Liveness dans un déploiement :
+---
+
+## Paramètres de configuration
+
+Chaque sonde accepte un ensemble de paramètres permettant de régler finement son comportement. Ces paramètres sont communs aux trois types de sondes et aux trois méthodes de test :
+
+| Paramètre | Type | Valeur par défaut | Description |
+|---|---|---|---|
+| `initialDelaySeconds` | int | 0 | Délai en secondes avant la première exécution de la sonde après le démarrage du conteneur |
+| `periodSeconds` | int | 10 | Fréquence d'exécution de la sonde (en secondes) |
+| `timeoutSeconds` | int | 1 | Délai maximum d'attente d'une réponse avant de considérer la sonde échouée |
+| `successThreshold` | int | 1 | Nombre de succès consécutifs requis pour passer de l'état "failed" à "success" (minimum 1, toujours 1 pour Liveness et Startup) |
+| `failureThreshold` | int | 3 | Nombre d'échecs consécutifs avant de déclencher l'action corrective (redémarrage ou retrait du service) |
+
+:::tip Choisir des valeurs de timeout adaptées
+Un `timeoutSeconds` trop court (1 seconde par défaut) est souvent insuffisant pour des endpoints qui effectuent des vérifications internes (connexion BDD, cache). Préférez des valeurs entre 3 et 5 secondes. En parallèle, un `periodSeconds` trop court augmente la charge sur l'application et le plan de contrôle Kubernetes : 10 à 30 secondes est une valeur raisonnable pour les sondes en régime de croisière.
+:::
+
+---
+
+## Exemple complet avec les trois sondes
+
+Voici un exemple de déploiement configurant les trois types de sondes simultanément pour une application web Java :
 
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: web-server
+  name: welcome-app
+  namespace: production
 spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: welcome-app
   template:
+    metadata:
+      labels:
+        app: welcome-app
     spec:
       containers:
-      - name: web-server
+      - name: welcome-app
+        image: quay.io/example/welcome-app:v2
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        startupProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          failureThreshold: 30
+          periodSeconds: 10
         livenessProbe:
           httpGet:
-            path: /health
-            port: 3000
-          initialDelaySeconds: 15
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 0
           periodSeconds: 10
+          timeoutSeconds: 5
           failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 0
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 6
+          successThreshold: 1
 ```
 
-Dans cet exemple, la sonde Liveness est configurée pour effectuer une requête HTTP sur le chemin `/health` du serveur web. La sonde attendra 15 secondes après le démarrage avant de commencer les vérifications, puis s'exécutera toutes les 10 secondes, en permettant jusqu'à trois échecs consécutifs avant de redémarrer le pod.
+:::warning Sondes trop strictes et redémarrages en cascade
+Des sondes Liveness excessivement sensibles peuvent provoquer des redémarrages en cascade. Si un pod connaît un pic de charge temporaire qui ralentit son endpoint `/healthz`, la sonde peut l'éliminer, ce qui augmente la charge sur les pods restants, qui à leur tour deviennent lents, sont éliminés, et ainsi de suite. Pour éviter ce phénomène :
+- Assurez-vous que l'endpoint de santé est **léger et indépendant de la charge applicative**.
+- Augmentez `failureThreshold` et `timeoutSeconds` plutôt que de descendre `periodSeconds`.
+- Utilisez des endpoints `/healthz` (liveness) et `/ready` (readiness) **distincts** avec des logiques différentes.
+:::
 
-### Commande en Ligne de Commande
+---
 
-Les sondes peuvent également être ajoutées ou modifiées via la ligne de commande en utilisant la commande `oc set probe`. Par exemple, pour ajouter une sonde Readiness à un déploiement :
+## Configuration depuis la console OpenShift
+
+Il est possible de configurer les sondes directement depuis l'interface web d'OpenShift, sans éditer de YAML manuellement.
+
+![Formulaire Health Checks dans la console OpenShift](./images/console-health-checks.svg)
+
+*Vue du formulaire "Health Checks" dans la console OpenShift : sélection du type de sonde, de la méthode de test et des paramètres de délai.*
+
+Pour accéder à cette interface :
+
+1. Naviguer vers **Workloads > Deployments**
+2. Sélectionner le déploiement concerné
+3. Cliquer sur l'onglet **Actions > Edit health checks** (ou accéder directement à l'onglet **Health checks** du déploiement)
+4. Configurer les sondes Liveness, Readiness et Startup avec les paramètres souhaités
+
+## Configuration par ligne de commande
+
+La commande `oc set probe` permet d'ajouter ou de modifier une sonde directement depuis le terminal :
 
 ```bash
-oc set probe deployment/front-end --readiness --failure-threshold 6 --period-seconds 10 --get-url http://:8080/healthz
+# Ajouter une sonde Readiness HTTP
+oc set probe deployment/welcome-app \
+  --readiness \
+  --get-url http://:8080/ready \
+  --failure-threshold 6 \
+  --period-seconds 5
+
+# Ajouter une sonde Liveness TCP
+oc set probe deployment/redis \
+  --liveness \
+  --open-tcp 6379 \
+  --initial-delay-seconds 15 \
+  --period-seconds 10
+
+# Supprimer une sonde
+oc set probe deployment/welcome-app --remove --readiness
 ```
 
-Cette commande configure une sonde Readiness qui teste la santé de l'application à l'URL spécifiée, avec un seuil d'échec et une fréquence définis.
+---
 
-## Conclusion
+## Résumé et bonnes pratiques
 
-Les sondes d'intégrité dans OpenShift sont un élément fondamental pour maintenir la disponibilité et la performance des applications. En intégrant ces sondes dans vos déploiements, vous pouvez non seulement améliorer la résilience de vos applications, mais aussi garantir une expérience utilisateur fluide et sans interruption. Une bonne configuration des sondes d'intégrité est essentielle pour assurer la réactivité du système et la détection précoce des problèmes, permettant ainsi aux équipes de développement et d'exploitation de réagir rapidement et de maintenir la qualité du service.
+Les sondes d'intégrité sont un mécanisme fondamental pour garantir la fiabilité des applications dans OpenShift. Voici les points essentiels à retenir :
+
+- **Toujours définir une Readiness probe** sur les pods qui servent du trafic, pour éviter d'envoyer des requêtes à un pod non prêt lors des démarrages ou des rolling updates.
+- **Utiliser une Startup probe** pour les applications dont le démarrage dépasse 30 secondes, afin de ne pas lutter contre la Liveness probe pendant l'initialisation.
+- **Garder l'endpoint de Liveness probe léger** : il doit retourner une réponse en quelques millisecondes, sans interroger des dépendances externes.
+- **Distinguer les endpoints `/healthz` et `/ready`** : le premier vérifie que le processus est vivant, le second vérifie que toutes les dépendances nécessaires au traitement des requêtes sont disponibles.
+- **Tester les sondes localement** avant de déployer en production, en simulant des états de défaillance.

@@ -4,7 +4,7 @@
 
   <!-- Internet / Browser -->
   <rect x="20" y="100" width="110" height="80" rx="10" fill="#FFF3E0" stroke="#FF9800" stroke-width="2"/>
-  <text x="75" y="136" text-anchor="middle" font-size="28">🌐</text>
+  <text x="75" y="136" text-anchor="middle" font-size="13" font-weight="bold" fill="#E65100">[Web]</text>
   <text x="75" y="160" text-anchor="middle" font-size="12" font-weight="bold" fill="#E65100">Navigateur</text>
   <text x="75" y="175" text-anchor="middle" font-size="10" fill="#BF360C">Internet</text>
 
@@ -24,15 +24,15 @@
   <text x="340" y="130" text-anchor="middle" font-size="10" fill="#880E4F">HTTP</text>
 
   <!-- Service -->
-  <rect x="360" y="90" width="150" height="100" rx="10" fill="#E8EAF6" stroke="#3F51B5" stroke-width="2"/>
-  <text x="435" y="123" text-anchor="middle" font-size="13" font-weight="bold" fill="#1A237E">Service</text>
-  <text x="435" y="142" text-anchor="middle" font-size="10" fill="#283593">ClusterIP</text>
-  <text x="435" y="157" text-anchor="middle" font-size="10" fill="#283593">172.30.x.x:80</text>
-  <text x="435" y="175" text-anchor="middle" font-size="10" fill="#1A237E">Load balancing</text>
+  <rect x="360" y="90" width="150" height="100" rx="10" fill="#E8EAF6" stroke="#202cac" stroke-width="2"/>
+  <text x="435" y="123" text-anchor="middle" font-size="13" font-weight="bold" fill="#202cac">Service</text>
+  <text x="435" y="142" text-anchor="middle" font-size="10" fill="#202cac">ClusterIP</text>
+  <text x="435" y="157" text-anchor="middle" font-size="10" fill="#202cac">172.30.x.x:80</text>
+  <text x="435" y="175" text-anchor="middle" font-size="10" fill="#202cac">Load balancing</text>
 
   <!-- Arrows 3a & 3b -->
-  <line x1="510" y1="120" x2="555" y2="100" stroke="#3F51B5" stroke-width="2" marker-end="url(#arrowBlue)"/>
-  <line x1="510" y1="160" x2="555" y2="200" stroke="#3F51B5" stroke-width="2" marker-end="url(#arrowBlue)"/>
+  <line x1="510" y1="120" x2="555" y2="100" stroke="#202cac" stroke-width="2" marker-end="url(#arrowBlue)"/>
+  <line x1="510" y1="160" x2="555" y2="200" stroke="#202cac" stroke-width="2" marker-end="url(#arrowBlue)"/>
 
   <!-- Pods -->
   <rect x="555" y="60" width="120" height="70" rx="10" fill="#E8F5E9" stroke="#4CAF50" stroke-width="2"/>
@@ -64,7 +64,7 @@
       <path d="M0,0 L0,6 L8,3 z" fill="#E91E63"/>
     </marker>
     <marker id="arrowBlue" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L8,3 z" fill="#3F51B5"/>
+      <path d="M0,0 L0,6 L8,3 z" fill="#202cac"/>
     </marker>
   </defs>
 </svg>

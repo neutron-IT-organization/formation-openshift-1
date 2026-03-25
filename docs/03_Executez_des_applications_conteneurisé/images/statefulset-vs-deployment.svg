@@ -6,37 +6,37 @@
   <text x="410" y="38" text-anchor="middle" font-size="20" font-weight="bold" fill="#1A1A2E">Deployment vs StatefulSet</text>
 
   <!-- Deployment side -->
-  <rect x="30" y="60" width="360" height="300" rx="10" fill="#E3F2FD" stroke="#326CE5" stroke-width="2"/>
-  <text x="210" y="90" text-anchor="middle" font-size="16" font-weight="bold" fill="#326CE5">Deployment</text>
+  <rect x="30" y="60" width="360" height="300" rx="10" fill="#E8EAF6" stroke="#202cac" stroke-width="2"/>
+  <text x="210" y="90" text-anchor="middle" font-size="16" font-weight="bold" fill="#202cac">Deployment</text>
   <text x="210" y="110" text-anchor="middle" font-size="12" fill="#555">Pods interchangeables, noms aléatoires</text>
 
   <!-- Deployment pods -->
-  <rect x="55" y="130" width="90" height="50" rx="8" fill="#326CE5"/>
+  <rect x="55" y="130" width="90" height="50" rx="8" fill="#202cac"/>
   <text x="100" y="158" text-anchor="middle" font-size="12" fill="white" font-weight="bold">app-7f4x</text>
-  <text x="100" y="173" text-anchor="middle" font-size="10" fill="#BBD" >Pod 1</text>
+  <text x="100" y="173" text-anchor="middle" font-size="10" fill="#BBD">Pod 1</text>
 
-  <rect x="165" y="130" width="90" height="50" rx="8" fill="#326CE5"/>
+  <rect x="165" y="130" width="90" height="50" rx="8" fill="#202cac"/>
   <text x="210" y="158" text-anchor="middle" font-size="12" fill="white" font-weight="bold">app-2k9p</text>
   <text x="210" y="173" text-anchor="middle" font-size="10" fill="#BBD">Pod 2</text>
 
-  <rect x="275" y="130" width="90" height="50" rx="8" fill="#326CE5"/>
+  <rect x="275" y="130" width="90" height="50" rx="8" fill="#202cac"/>
   <text x="320" y="158" text-anchor="middle" font-size="12" fill="white" font-weight="bold">app-m3nz</text>
   <text x="320" y="173" text-anchor="middle" font-size="10" fill="#BBD">Pod 3</text>
 
   <!-- Shared volume under Deployment -->
-  <rect x="110" y="215" width="160" height="40" rx="6" fill="#BBDEFB" stroke="#326CE5" stroke-width="1.5" stroke-dasharray="5,3"/>
-  <text x="190" y="239" text-anchor="middle" font-size="12" fill="#1565C0">Volume partagé (optionnel)</text>
+  <rect x="110" y="215" width="160" height="40" rx="6" fill="#C5CAE9" stroke="#202cac" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="190" y="239" text-anchor="middle" font-size="12" fill="#202cac">Volume partagé (optionnel)</text>
 
   <!-- Lines deployment to volume -->
-  <line x1="100" y1="180" x2="150" y2="215" stroke="#326CE5" stroke-width="1.5" stroke-dasharray="4,3"/>
-  <line x1="210" y1="180" x2="190" y2="215" stroke="#326CE5" stroke-width="1.5" stroke-dasharray="4,3"/>
-  <line x1="320" y1="180" x2="245" y2="215" stroke="#326CE5" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <line x1="100" y1="180" x2="150" y2="215" stroke="#202cac" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <line x1="210" y1="180" x2="190" y2="215" stroke="#202cac" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <line x1="320" y1="180" x2="245" y2="215" stroke="#202cac" stroke-width="1.5" stroke-dasharray="4,3"/>
 
   <!-- Deployment characteristics -->
-  <text x="55" y="285" font-size="12" fill="#333">✅ Démarrage simultané des pods</text>
-  <text x="55" y="305" font-size="12" fill="#333">✅ Noms de pods aléatoires</text>
-  <text x="55" y="325" font-size="12" fill="#333">✅ Pas d'identité stable</text>
-  <text x="55" y="345" font-size="12" fill="#0D47A1">→ Idéal pour apps sans état (web, API)</text>
+  <text x="55" y="285" font-size="12" fill="#333">OK  Démarrage simultané des pods</text>
+  <text x="55" y="305" font-size="12" fill="#333">OK  Noms de pods aléatoires</text>
+  <text x="55" y="325" font-size="12" fill="#333">OK  Pas d'identité stable</text>
+  <text x="55" y="345" font-size="12" fill="#202cac">→ Idéal pour apps sans état (web, API)</text>
 
   <!-- StatefulSet side -->
   <rect x="430" y="60" width="360" height="300" rx="10" fill="#E8F5E9" stroke="#4CAF50" stroke-width="2"/>
@@ -75,8 +75,8 @@
   <line x1="720" y1="180" x2="720" y2="210" stroke="#4CAF50" stroke-width="1.5"/>
 
   <!-- StatefulSet characteristics -->
-  <text x="455" y="285" font-size="12" fill="#333">✅ Démarrage ordonné (0, 1, 2...)</text>
-  <text x="455" y="305" font-size="12" fill="#333">✅ Noms stables et prédictibles</text>
-  <text x="455" y="325" font-size="12" fill="#333">✅ PVC unique par pod (données isolées)</text>
+  <text x="455" y="285" font-size="12" fill="#333">OK  Démarrage ordonné (0, 1, 2...)</text>
+  <text x="455" y="305" font-size="12" fill="#333">OK  Noms stables et prédictibles</text>
+  <text x="455" y="325" font-size="12" fill="#333">OK  PVC unique par pod (données isolées)</text>
   <text x="455" y="345" font-size="12" fill="#1B5E20">→ Idéal pour bases de données</text>
 </svg>

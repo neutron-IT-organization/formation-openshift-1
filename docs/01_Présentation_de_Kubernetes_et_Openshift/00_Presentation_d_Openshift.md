@@ -2,74 +2,233 @@
 
 ## Objectif
 
-L'objectif de cette première partie est de fournir une compréhension des concepts fondamentaux qui sous-tendent l'utilisation des conteneurs, l'orchestration de ces conteneurs avec Kubernetes, et la façon dont OpenShift s'appuie sur Kubernetes pour offrir une plateforme de conteneurs complète et prête pour les entreprises. Cette partie est divisée en trois sections : une introduction aux conteneurs, une explication de Kubernetes et de l'orchestration de conteneurs, et une présentation d'OpenShift avec ses spécificités par rapport à Kubernetes.
+Cette section pose les fondations conceptuelles de la formation. Avant de manipuler OpenShift, il est essentiel de comprendre pourquoi les conteneurs ont émergé, comment Kubernetes les orchestre, et ce qu'OpenShift apporte par rapport à Kubernetes nu. Ces trois niveaux — conteneur, orchestrateur, plateforme — forment une pile cohérente que vous allez maîtriser tout au long de la formation.
 
-## Comprendre les Conteneurs
+:::info Structure de cette section
+Cette section est divisée en trois parties progressives :
+1. Les conteneurs : qu'est-ce que c'est et pourquoi les utiliser
+2. Kubernetes : l'orchestrateur open source
+3. OpenShift : la plateforme d'entreprise bâtie sur Kubernetes
+:::
 
-### Qu'est-ce qu'un conteneur?
+---
 
-Les conteneurs représentent une révolution dans le développement logiciel et la gestion d'infrastructure. Un conteneur est une unité de déploiement autonome qui encapsule une application avec toutes ses dépendances nécessaires à son exécution. Cela permet à l'application de fonctionner de manière cohérente et fiable quel que soit l'environnement dans lequel elle est déployée.
+## Partie 1 — Comprendre les conteneurs
 
-Un conteneur inclut tout ce dont l'application a besoin : le code, les bibliothèques, les variables d'environnement et les fichiers de configuration. Cette isolation assure que les applications ne partagent pas leurs dépendances avec le système d'exploitation hôte ou d'autres applications, réduisant ainsi les conflits et augmentant la portabilité.
+### Qu'est-ce qu'un conteneur ?
+
+Un conteneur est une unité d'exécution légère qui encapsule une application avec l'ensemble de ses dépendances : bibliothèques, configuration, variables d'environnement et code applicatif. Contrairement à une machine virtuelle, un conteneur ne virtualise pas le matériel : il s'appuie sur le noyau du système d'exploitation hôte et utilise des mécanismes d'isolation fournis par Linux (namespaces, cgroups).
+
+Le résultat est une unité portable, reproductible et rapide à démarrer, qui fonctionne de manière identique quel que soit l'environnement d'exécution.
+
+### Comparaison : VM, Conteneur, Machine physique
+
+| Critère | Machine physique | Machine virtuelle (VM) | Conteneur |
+|---------|-----------------|----------------------|-----------|
+| Isolation | Aucune | Système d'exploitation complet | Processus isolés (namespaces Linux) |
+| Démarrage | Minutes | 30 secondes à 2 minutes | Secondes |
+| Taille | — | Plusieurs Go (OS inclus) | Quelques Mo à centaines de Mo |
+| Partage du noyau OS | Oui | Non (chaque VM a son propre noyau) | Oui |
+| Portabilité | Faible | Moyenne (dépend de l'hyperviseur) | Haute (image standardisée OCI) |
+| Densité sur un hôte | 1 | Dizaines | Centaines |
+| Overhead ressources | Minimal | Significatif (hyperviseur + OS invité) | Minimal |
+| Cas d'usage typique | Applications legacy | Isolation forte, OS différents | Microservices, CI/CD |
+
+![Comparaison des piles technologiques](./images/container_stack.png)
+
+*Représentation des couches pour une machine physique, une VM et un conteneur.*
+
+:::tip L'image comme unité de distribution
+L'image de conteneur est le format de distribution standard. Elle est construite une fois et peut être exécutée sur n'importe quel environnement compatible OCI (Open Container Initiative) : votre laptop, un serveur de production, ou un cluster Kubernetes.
+:::
 
 ### Avantages des conteneurs
 
-1. **Portabilité accrue**: Les conteneurs fonctionnent de la même manière sur n'importe quel environnement, qu'il s'agisse d'un ordinateur portable, d'un serveur ou d'un cloud, facilitant ainsi le déplacement des applications entre les différents environnements de développement, de test et de production.
+**1. Portabilité**
 
-2. **Isolation**: Chaque conteneur fonctionne de manière isolée, ce qui signifie qu'une application contenue ne sera pas affectée par les modifications ou les erreurs des autres applications ou du système d'exploitation.
+L'image de conteneur embarque tout ce dont l'application a besoin. Le fameux problème "ça marche sur mon poste" disparaît : si ça tourne en développement, ça tourne en production.
 
-3. **Efficacité des ressources**: Comparés aux machines virtuelles, les conteneurs utilisent les ressources de manière plus efficace car ils partagent le même noyau du système d'exploitation hôte, ce qui permet d'exécuter plusieurs conteneurs sur une seule machine physique ou virtuelle sans le surcoût des hyperviseurs.
+**2. Isolation**
 
-4. **Démarrage rapide**: Les conteneurs démarrent presque instantanément, ce qui accélère considérablement les cycles de développement, de test et de déploiement des applications.
+Chaque conteneur s'exécute dans son propre espace de processus, réseau et système de fichiers. Une défaillance dans un conteneur n'affecte pas les autres.
 
-5. **Gestion simplifiée des dépendances**: Toutes les dépendances d'une application sont empaquetées dans le conteneur, ce qui élimine les problèmes de version et de compatibilité qui peuvent survenir lorsqu'une application dépend des bibliothèques du système hôte.
+**3. Efficacité des ressources**
 
-![container stack](./images/container_stack.png)
+Les conteneurs partagent le noyau de l'hôte. Il est possible de faire tourner des centaines de conteneurs sur un seul serveur, là où vous ne pourriez faire tourner que quelques dizaines de VMs.
 
-Alors que les conteneurs offrent de nombreux avantages pour le développement et le déploiement d'applications, leur gestion à grande échelle nécessite des outils et des processus robustes. C'est là que Kubernetes entre en jeu.
+**4. Démarrage rapide**
 
-## Introduction à Kubernetes
+Un conteneur démarre en quelques secondes. Cette rapidité est critique pour les mécanismes d'autoscaling et de rétablissement automatique après une panne.
 
-### Qu'est-ce que Kubernetes?
+**5. Gestion simplifiée des dépendances**
 
-Kubernetes est une plateforme d'orchestration de conteneurs open source qui simplifie la gestion des applications conteneurisées à grande échelle. Développé à l'origine par Google, Kubernetes est maintenant maintenu par la Cloud Native Computing Foundation (CNCF). Il fournit des mécanismes pour le déploiement, la mise à l'échelle et la gestion automatisés des conteneurs.
+```dockerfile
+# Exemple de Dockerfile : toutes les dépendances sont déclarées
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+CMD ["python", "app.py"]
+```
 
-### Pourquoi un orchestrateur de conteneurs est-il nécessaire?
+Toutes les dépendances sont déclarées dans l'image. Plus de conflits de versions entre les applications déployées sur le même hôte.
 
-1. **Automatisation des déploiements**: Kubernetes automatise le déploiement et la gestion des conteneurs, permettant aux équipes de développement de se concentrer sur l'écriture du code plutôt que sur l'infrastructure.
+:::note Limites des conteneurs seuls
+Les conteneurs sont excellents pour packager et isoler des applications. En revanche, gérer des dizaines ou des centaines de conteneurs manuellement devient rapidement ingérable. C'est précisément là qu'intervient Kubernetes.
+:::
 
-2. **Équilibrage de charge et mise à l'échelle automatique**: Kubernetes distribue automatiquement le trafic réseau aux conteneurs afin de garantir la stabilité et les performances des applications. Il ajuste également le nombre de conteneurs en fonction de la demande, ce qui permet une utilisation optimale des ressources.
+---
 
-3. **Gestion des pannes**: En cas de défaillance, Kubernetes redémarre automatiquement les conteneurs défaillants, remplace les nœuds, et réalloue les ressources nécessaires pour maintenir les applications en fonctionnement.
+## Partie 2 — Introduction à Kubernetes
 
-4. **Gestion de la configuration et des secrets**: Kubernetes facilite la gestion sécurisée des configurations et des secrets (tels que les mots de passe et les clés API), en les rendant disponibles uniquement aux conteneurs qui en ont besoin.
+### Qu'est-ce que Kubernetes ?
 
-5. **Orchestration des services**: Kubernetes organise les conteneurs en unités appelées pods, qui peuvent communiquer entre eux et avec d'autres services de manière sécurisée et efficace.
+Kubernetes (abrégé **k8s**) est une plateforme open source d'orchestration de conteneurs. Développé à l'origine par Google sur la base de son système interne Borg, il est aujourd'hui maintenu par la **Cloud Native Computing Foundation (CNCF)** et constitue le standard de fait pour l'orchestration de conteneurs en production.
 
-Ainsi, Kubernetes fournit les outils nécessaires pour gérer des conteneurs à grande échelle, ce qui est crucial pour les environnements de production modernes. Pour aller encore plus loin, OpenShift offre une solution basée sur Kubernetes avec des fonctionnalités supplémentaires pour les entreprises.
+Kubernetes résout un problème fondamental : comment gérer de manière fiable et automatisée des applications composées de nombreux conteneurs, répartis sur plusieurs machines ?
 
-## OpenShift
+### Pourquoi un orchestrateur est-il nécessaire ?
 
-### Qu'est-ce qu'OpenShift?
+Imaginez une application composée de 10 microservices, chacun instancié en 3 copies pour la haute disponibilité, déployée sur 5 serveurs. Sans orchestrateur, cela représente 30 conteneurs à surveiller, redémarrer en cas de panne, mettre à jour sans interruption de service, et équilibrer en charge. C'est impossible à gérer manuellement à l'échelle.
 
-OpenShift est une plateforme de conteneurs d'entreprise développée par Red Hat, qui repose sur Kubernetes. OpenShift ajoute une couche supplémentaire de fonctionnalités et d'outils pour faciliter la gestion, le développement et la sécurisation des applications conteneurisées. Il est conçu pour les environnements de production d'entreprise, offrant des capacités supplémentaires telles qu'une console web intuitive, des outils de développement intégrés, et des services de gestion de la sécurité.
+Kubernetes automatise l'ensemble de ce travail :
 
-### Différences entre Kubernetes et OpenShift
+**Déploiement déclaratif**
 
-1. **Interface utilisateur et expérience utilisateur**: OpenShift fournit une console web riche et une interface utilisateur graphique qui simplifient la gestion des conteneurs et des applications. Kubernetes, bien que puissant, nécessite souvent une gestion via des fichiers de configuration et des commandes en ligne de commande, ce qui peut être moins intuitif pour les nouveaux utilisateurs.
+```yaml
+# Vous décrivez l'état désiré, Kubernetes s'occupe d'y arriver
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mon-application
+spec:
+  replicas: 3          # Je veux 3 instances
+  selector:
+    matchLabels:
+      app: mon-application
+  template:
+    spec:
+      containers:
+      - name: app
+        image: mon-image:v1.2
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "250m"
+```
 
-2. **Sécurité**: OpenShift intègre des fonctionnalités de sécurité avancées par défaut, comme SELinux (Security-Enhanced Linux) et une gestion des identités et des accès robustes. Cela garantit que les déploiements sont sécurisés dès le départ, sans configurations supplémentaires complexes.
+**Réconciliation continue**
 
-3. **Outils de développement et intégration CI/CD**: OpenShift inclut des outils pour les développeurs tels que des pipelines CI/CD intégrés, des services de gestion des builds et un registre d'images intégré. Ces outils simplifient le développement et le déploiement continu des applications.
+Kubernetes surveille en permanence l'état réel du cluster et le compare à l'état déclaré. Si un pod tombe, il est automatiquement recréé. Si un nœud est perdu, les pods sont reprogrammés sur un autre nœud.
 
-4. **Support commercial et stabilité**: En tant que produit Red Hat, OpenShift bénéficie d'un support commercial et est conçu pour offrir une stabilité et une sécurité accrues pour les environnements de production.
+**Gestion des fonctionnalités clés**
 
-5. **Opérateurs Kubernetes**: OpenShift utilise les opérateurs Kubernetes pour automatiser la gestion des applications, facilitant ainsi l'extension des fonctionnalités de la plateforme. Les opérateurs sont des extensions de Kubernetes qui simplifient la gestion des applications complexes.
+| Fonctionnalité | Description |
+|---------------|-------------|
+| Scheduling | Placement automatique des pods sur les nœuds disponibles selon les ressources |
+| Self-healing | Redémarrage automatique des pods en échec, remplacement des nœuds défaillants |
+| Horizontal scaling | Augmentation ou réduction du nombre de pods selon la charge |
+| Rolling updates | Mise à jour progressive sans interruption de service |
+| Service discovery | Résolution DNS automatique entre les services |
+| Load balancing | Distribution du trafic entre les instances d'un service |
+| Configuration management | Gestion des ConfigMaps et Secrets pour la configuration applicative |
+| Storage orchestration | Montage automatique de volumes persistants |
 
-6. **Options de déploiement flexibles**: OpenShift propose diverses options de déploiement adaptées aux besoins des entreprises, qu'il s'agisse de déploiements sur site, dans des environnements de cloud public ou hybride, ou encore de configurations autogérées ou entièrement gérées par Red Hat.
+---
 
-![ocp stack](./images/ocp_stack.png)
+## Partie 3 — OpenShift
+
+### Qu'est-ce qu'OpenShift ?
+
+OpenShift est la plateforme de conteneurs d'entreprise de **Red Hat**. Elle repose sur Kubernetes et y ajoute une couche de fonctionnalités pensées pour les environnements de production d'entreprise : sécurité renforcée, outils pour les développeurs, console web avancée, opérateurs, et support commercial.
+
+OpenShift n'est pas un fork de Kubernetes : il *embarque* Kubernetes (upstream) et l'étend. Toutes les ressources Kubernetes standard (`Deployment`, `Service`, `Pod`…) fonctionnent de manière identique sur OpenShift.
+
+### Kubernetes vs OpenShift : comparaison des fonctionnalités
+
+| Fonctionnalité | Kubernetes (vanilla) | OpenShift |
+|---------------|---------------------|-----------|
+| Orchestration de conteneurs | Oui | Oui (base Kubernetes) |
+| Console web | Optionnelle (dashboard basique) | Intégrée, complète, extensible |
+| Authentification | Basique (certificats, tokens) | OAuth2, LDAP, OIDC intégrés |
+| Gestion des builds | Non | Oui (BuildConfig, S2I) |
+| Registre d'images intégré | Non | Oui (OpenShift Image Registry) |
+| Pipelines CI/CD | Non | Oui (OpenShift Pipelines, Tekton) |
+| Politique de sécurité des pods | Basique (PSA) | SecurityContextConstraints (SCC) avancées |
+| SELinux intégré | Non | Oui (RHCOS) |
+| Mises à jour du cluster | Manuel | Automatisées via le Cluster Version Operator |
+| Support commercial | Non (communauté) | Oui (Red Hat) |
+| Service Mesh | Non | Oui (OpenShift Service Mesh, Istio) |
+| Serverless | Non | Oui (OpenShift Serverless, Knative) |
+
+![Pile technologique OpenShift](./images/ocp_stack.png)
+
+*OpenShift s'appuie sur Kubernetes et y intègre des couches supplémentaires pour les entreprises.*
+
+### Les spécificités majeures d'OpenShift
+
+**1. Source-to-Image (S2I)**
+
+OpenShift inclut un mécanisme de build appelé S2I qui permet de transformer directement un dépôt Git en image de conteneur, sans écrire de Dockerfile :
+
+```shell
+# Déployer une application Node.js directement depuis un dépôt Git
+oc new-app nodejs~https://github.com/mon-org/mon-app.git
+```
+
+OpenShift détecte le langage, choisit le bon builder, compile l'application et génère l'image automatiquement.
+
+**2. Projets et namespaces**
+
+OpenShift utilise la notion de **Project** (projet), qui est un namespace Kubernetes enrichi avec des métadonnées supplémentaires et des politiques de sécurité par défaut. Chaque projet est isolé des autres par défaut.
+
+```shell
+# Créer un nouveau projet
+oc new-project mon-projet --description="Mon application de test"
+
+# Lister les projets accessibles
+oc get projects
+```
+
+**3. Routes**
+
+En plus des Ingress Kubernetes standard, OpenShift propose les **Routes**, qui exposent les services vers l'extérieur du cluster avec des fonctionnalités avancées (TLS edge, reencrypt, passthrough) :
+
+```yaml
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: mon-application
+spec:
+  host: mon-application.apps.cluster.example.com
+  to:
+    kind: Service
+    name: mon-service
+  tls:
+    termination: edge
+```
+
+**4. SecurityContextConstraints (SCC)**
+
+OpenShift impose par défaut que les conteneurs ne s'exécutent pas en tant que `root`. Les SCC définissent ce qu'un pod est autorisé à faire sur un nœud : utiliser le réseau hôte, monter certains volumes, élever ses privilèges. C'est un mécanisme de sécurité beaucoup plus granulaire que les Pod Security Standards de Kubernetes vanilla.
+
+:::warning Sécurité par défaut
+Sur OpenShift, un conteneur qui nécessite de s'exécuter en tant que `root` sera rejeté par défaut. Si vous migrez une image Docker existante qui ne respecte pas ce principe, vous devrez l'adapter ou configurer une SCC spécifique.
+:::
+
+**5. Opérateurs**
+
+Les opérateurs Kubernetes sont des contrôleurs personnalisés qui automatisent la gestion d'applications complexes (bases de données, middleware, etc.). OpenShift intègre un catalogue d'opérateurs (OperatorHub) avec des centaines d'opérateurs certifiés, permettant d'installer et de gérer des applications complexes en quelques clics.
+
+:::tip OpenShift en résumé
+OpenShift = Kubernetes + sécurité renforcée + outils développeur + console web complète + support Red Hat. Si vous savez utiliser Kubernetes, vous savez déjà utiliser OpenShift. OpenShift ajoute de la valeur sans retirer de flexibilité.
+:::
+
+---
 
 ## Conclusion
 
-En conclusion, OpenShift s'appuie sur Kubernetes pour offrir une solution de conteneurisation plus complète et adaptée aux besoins des entreprises. Il combine la puissance de Kubernetes avec des outils et des fonctionnalités supplémentaires pour simplifier la gestion, renforcer la sécurité et améliorer l'expérience utilisateur, faisant de lui un choix privilégié pour les déploiements en production.
+Les conteneurs permettent de packager et d'isoler les applications. Kubernetes orchestre ces conteneurs à grande échelle. OpenShift va plus loin en ajoutant les outils, la sécurité et le support nécessaires aux environnements de production d'entreprise.
+
+Cette progression — conteneur → Kubernetes → OpenShift — constitue le fil directeur de l'ensemble de cette formation. Dans la section suivante, nous allons explorer l'architecture interne d'un cluster OpenShift pour comprendre comment ces composants s'articulent.

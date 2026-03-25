@@ -1,0 +1,141 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 480" width="1000" height="480">
+  <!-- Background -->
+  <rect width="1000" height="480" fill="#1b1d21"/>
+
+  <!-- Top navigation bar -->
+  <rect width="1000" height="48" fill="#0f1014"/>
+  <rect width="1000" height="3" y="48" fill="#ff0454"/>
+
+  <!-- Red Hat OpenShift logo area -->
+  <rect x="16" y="12" width="28" height="24" rx="2" fill="#ff0454"/>
+  <text x="20" y="29" font-family="monospace" font-size="14" font-weight="bold" fill="white">OS</text>
+  <text x="52" y="30" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="white">Red Hat OpenShift</text>
+
+  <!-- Nav items -->
+  <text x="620" y="30" font-family="Arial, sans-serif" font-size="12" fill="#a0a0a8">Cluster: ocp-training</text>
+  <circle cx="880" cy="24" r="14" fill="#303030"/>
+  <text x="875" y="29" font-family="Arial, sans-serif" font-size="11" fill="#c0c0c8">dev</text>
+  <text x="910" y="30" font-family="Arial, sans-serif" font-size="12" fill="#a0a0a8">?</text>
+  <text x="940" y="30" font-family="Arial, sans-serif" font-size="12" fill="#a0a0a8">admin</text>
+
+  <!-- Left sidebar -->
+  <rect x="0" y="51" width="220" height="429" fill="#16181d"/>
+
+  <!-- Perspective label -->
+  <text x="20" y="90" font-family="Arial, sans-serif" font-size="10" fill="#606070" font-weight="bold">ADMINISTRATOR</text>
+
+  <!-- Workloads section -->
+  <text x="20" y="122" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#c0c0cc">Workloads</text>
+  <text x="36" y="148" font-family="Arial, sans-serif" font-size="12" fill="#9090a0">Pods</text>
+  <text x="36" y="172" font-family="Arial, sans-serif" font-size="12" fill="#9090a0">Deployments</text>
+  <text x="36" y="196" font-family="Arial, sans-serif" font-size="12" fill="#9090a0">ConfigMaps</text>
+  <text x="36" y="220" font-family="Arial, sans-serif" font-size="12" fill="#9090a0">Secrets</text>
+
+  <!-- Networking section -->
+  <text x="20" y="252" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#c0c0cc">Networking</text>
+  <text x="36" y="278" font-family="Arial, sans-serif" font-size="12" fill="#9090a0">Services</text>
+  <text x="36" y="302" font-family="Arial, sans-serif" font-size="12" fill="#9090a0">Routes</text>
+
+  <!-- Storage section header -->
+  <text x="20" y="336" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#c0c0cc">Storage</text>
+
+  <!-- PersistentVolumes -->
+  <rect x="0" y="344" width="220" height="28" fill="transparent"/>
+  <text x="36" y="363" font-family="Arial, sans-serif" font-size="12" fill="#9090a0">PersistentVolumes</text>
+
+  <!-- PersistentVolumeClaims highlighted -->
+  <rect x="0" y="372" width="220" height="30" fill="#202cac"/>
+  <rect x="0" y="372" width="4" height="30" fill="#ff0454"/>
+  <text x="36" y="392" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">PersistentVolumeClaims</text>
+
+  <!-- StorageClasses -->
+  <rect x="0" y="403" width="220" height="28" fill="transparent"/>
+  <text x="36" y="422" font-family="Arial, sans-serif" font-size="12" fill="#9090a0">StorageClasses</text>
+
+  <!-- Main content area -->
+  <rect x="220" y="51" width="780" height="429" fill="#1b1d21"/>
+
+  <!-- Page title and actions -->
+  <text x="240" y="88" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">PersistentVolumeClaims</text>
+  <text x="240" y="108" font-family="Arial, sans-serif" font-size="12" fill="#8090b0">Namespace: formation</text>
+
+  <rect x="840" y="68" width="140" height="30" rx="4" fill="#202cac"/>
+  <text x="855" y="88" font-family="Arial, sans-serif" font-size="12" fill="white">Creer un PVC</text>
+
+  <!-- Filter bar -->
+  <rect x="240" y="124" width="300" height="30" rx="4" fill="#0f1014" stroke="#303040" stroke-width="1"/>
+  <text x="256" y="144" font-family="Arial, sans-serif" font-size="12" fill="#5060a0">Filtrer par nom...</text>
+
+  <!-- Table header -->
+  <rect x="240" y="164" width="730" height="34" rx="4" fill="#16181f"/>
+  <text x="258" y="186" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#a0a8c0">Nom</text>
+  <text x="370" y="186" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#a0a8c0">Statut</text>
+  <text x="450" y="186" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#a0a8c0">Volume</text>
+  <text x="580" y="186" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#a0a8c0">Capacite</text>
+  <text x="650" y="186" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#a0a8c0">Modes d'acces</text>
+  <text x="760" y="186" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#a0a8c0">StorageClass</text>
+  <text x="890" y="186" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#a0a8c0">Age</text>
+
+  <!-- Divider line -->
+  <rect x="240" y="198" width="730" height="1" fill="#303040"/>
+
+  <!-- Row 1: postgres-pvc -->
+  <rect x="240" y="199" width="730" height="46" fill="#1e2026"/>
+  <rect x="240" y="244" width="730" height="1" fill="#303040"/>
+
+  <!-- Row 1 content -->
+  <text x="258" y="227" font-family="monospace" font-size="12" font-weight="bold" fill="#7090e0">postgres-pvc</text>
+
+  <!-- Status: Bound (green) -->
+  <rect x="366" y="213" width="56" height="20" rx="10" fill="#0d2010"/>
+  <circle cx="382" cy="223" r="5" fill="#3db838"/>
+  <text x="390" y="227" font-family="Arial, sans-serif" font-size="11" fill="#3db838">Bound</text>
+
+  <text x="450" y="227" font-family="monospace" font-size="10" fill="#6070a0">pvc-a8f2c...</text>
+  <text x="580" y="227" font-family="Arial, sans-serif" font-size="12" fill="#d0d8f0">1 Gi</text>
+  <text x="650" y="227" font-family="Arial, sans-serif" font-size="11" fill="#d0d8f0">RWO</text>
+  <text x="760" y="227" font-family="monospace" font-size="11" fill="#d0d8f0">standard-csi</text>
+  <text x="890" y="227" font-family="Arial, sans-serif" font-size="12" fill="#8090b0">5h</text>
+
+  <!-- Row 2: app-data-pvc -->
+  <rect x="240" y="245" width="730" height="46" fill="#1b1d21"/>
+  <rect x="240" y="290" width="730" height="1" fill="#303040"/>
+
+  <!-- Row 2 content -->
+  <text x="258" y="273" font-family="monospace" font-size="12" font-weight="bold" fill="#7090e0">app-data-pvc</text>
+
+  <!-- Status: Pending (orange) -->
+  <rect x="366" y="259" width="68" height="20" rx="10" fill="#1a1000"/>
+  <circle cx="382" cy="269" r="5" fill="#f0ab00"/>
+  <text x="390" y="273" font-family="Arial, sans-serif" font-size="11" fill="#f0ab00">Pending</text>
+
+  <text x="450" y="273" font-family="Arial, sans-serif" font-size="12" fill="#5060a0">—</text>
+  <text x="580" y="273" font-family="Arial, sans-serif" font-size="12" fill="#5060a0">—</text>
+  <text x="650" y="273" font-family="Arial, sans-serif" font-size="12" fill="#5060a0">—</text>
+  <text x="760" y="273" font-family="monospace" font-size="11" fill="#d0d8f0">standard-csi</text>
+  <text x="890" y="273" font-family="Arial, sans-serif" font-size="12" fill="#8090b0">1m</text>
+
+  <!-- Info banner for Pending -->
+  <rect x="240" y="308" width="730" height="52" rx="4" fill="#1a1400" stroke="#f0ab00" stroke-width="1"/>
+  <rect x="240" y="308" width="4" height="52" fill="#f0ab00"/>
+  <text x="258" y="329" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#f0ab00">En attente de provisionnement</text>
+  <text x="258" y="349" font-family="Arial, sans-serif" font-size="11" fill="#b09060">app-data-pvc est en statut Pending : aucun PersistentVolume disponible ne correspond a la demande.</text>
+
+  <!-- Count -->
+  <text x="240" y="390" font-family="Arial, sans-serif" font-size="12" fill="#6070a0">2 PersistentVolumeClaims</text>
+
+  <!-- Storage summary cards -->
+  <rect x="240" y="408" width="218" height="56" rx="4" fill="#16181f" stroke="#303040" stroke-width="1"/>
+  <text x="258" y="430" font-family="Arial, sans-serif" font-size="11" fill="#8090b0">Total demande</text>
+  <text x="258" y="454" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#7090e0">1 Gi</text>
+
+  <rect x="470" y="408" width="218" height="56" rx="4" fill="#16181f" stroke="#303040" stroke-width="1"/>
+  <text x="488" y="430" font-family="Arial, sans-serif" font-size="11" fill="#8090b0">StorageClass active</text>
+  <text x="488" y="454" font-family="monospace" font-size="13" font-weight="bold" fill="#d0d8f0">standard-csi</text>
+
+  <rect x="700" y="408" width="270" height="56" rx="4" fill="#16181f" stroke="#303040" stroke-width="1"/>
+  <text x="718" y="430" font-family="Arial, sans-serif" font-size="11" fill="#8090b0">Bound / Pending</text>
+  <text x="718" y="454" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#3db838">1 Bound</text>
+  <text x="800" y="454" font-family="Arial, sans-serif" font-size="14" fill="#8090b0"> / </text>
+  <text x="818" y="454" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#f0ab00">1 Pending</text>
+</svg>

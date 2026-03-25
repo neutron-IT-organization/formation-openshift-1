@@ -1,0 +1,174 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500" width="1000" height="500">
+  <defs>
+    <style>
+      .bg { fill: #1a1a2e; }
+      .nav-bg { fill: #0d0d1a; }
+      .sidebar-bg { fill: #141428; }
+      .sidebar-section { fill: #202cac; }
+      .sidebar-item { fill: #1e1e3a; }
+      .sidebar-item-hover { fill: #202cac; }
+      .main-bg { fill: #1c1c30; }
+      .table-header { fill: #252540; }
+      .table-row-alt { fill: #20203a; }
+      .text-white { fill: #e8e8f0; font-family: 'RedHatDisplay', 'Red Hat Display', Arial, sans-serif; }
+      .text-gray { fill: #9090b0; font-family: 'RedHatDisplay', 'Red Hat Display', Arial, sans-serif; }
+      .text-accent { fill: #ff0454; font-family: 'RedHatDisplay', 'Red Hat Display', Arial, sans-serif; }
+      .text-blue { fill: #7090ff; font-family: 'RedHatDisplay', 'Red Hat Display', Arial, sans-serif; }
+      .btn-primary { fill: #202cac; }
+      .btn-border { fill: none; stroke: #202cac; stroke-width: 1; }
+      .divider { stroke: #2a2a4a; stroke-width: 1; }
+      .badge { fill: #2a3a6a; }
+      .badge-text { fill: #8aacff; font-family: Arial, sans-serif; font-size: 11px; }
+      .nav-icon { fill: #ff0454; }
+      .status-ok { fill: #4caf50; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1000" height="500" class="bg"/>
+
+  <!-- Top Navigation Bar -->
+  <rect width="1000" height="48" class="nav-bg"/>
+  <line x1="0" y1="48" x2="1000" y2="48" class="divider"/>
+
+  <!-- RH OpenShift Logo area -->
+  <rect x="0" y="0" width="220" height="48" fill="#0a0a18"/>
+  <!-- Red hat logo simplified -->
+  <rect x="12" y="14" width="20" height="20" rx="10" fill="#ff0454"/>
+  <text x="40" y="28" class="text-accent" font-size="13" font-weight="bold" font-family="Arial, sans-serif">Red Hat</text>
+  <text x="108" y="28" class="text-white" font-size="13" font-family="Arial, sans-serif"> OpenShift</text>
+
+  <!-- Nav items -->
+  <text x="240" y="28" class="text-gray" font-size="12" font-family="Arial, sans-serif">Home</text>
+  <text x="290" y="28" class="text-white" font-size="12" font-family="Arial, sans-serif">Administrator</text>
+
+  <!-- Right nav icons -->
+  <circle cx="920" cy="24" r="10" fill="#2a2a4a"/>
+  <text x="916" y="28" class="text-gray" font-size="11" font-family="Arial, sans-serif">?</text>
+  <circle cx="950" cy="24" r="10" fill="#ff0454" opacity="0.85"/>
+  <text x="946" y="29" fill="white" font-size="11" font-weight="bold" font-family="Arial, sans-serif">A</text>
+  <text x="968" y="28" class="text-white" font-size="12" font-family="Arial, sans-serif">admin</text>
+
+  <!-- Sidebar -->
+  <rect x="0" y="48" width="220" height="452" class="sidebar-bg"/>
+  <line x1="220" y1="48" x2="220" y2="500" class="divider"/>
+
+  <!-- Sidebar sections -->
+  <!-- Home -->
+  <text x="20" y="80" class="text-gray" font-size="12" font-family="Arial, sans-serif">Home</text>
+  <line x1="0" y1="90" x2="220" y2="90" class="divider"/>
+
+  <!-- Operators section -->
+  <text x="20" y="112" class="text-gray" font-size="11" font-family="Arial, sans-serif">Operators</text>
+  <line x1="0" y1="124" x2="220" y2="124" class="divider"/>
+
+  <!-- Workloads section -->
+  <text x="20" y="146" class="text-gray" font-size="11" font-family="Arial, sans-serif">Workloads</text>
+  <line x1="0" y1="158" x2="220" y2="158" class="divider"/>
+
+  <!-- Networking section -->
+  <text x="20" y="180" class="text-gray" font-size="11" font-family="Arial, sans-serif">Networking</text>
+  <line x1="0" y1="192" x2="220" y2="192" class="divider"/>
+
+  <!-- Storage section -->
+  <text x="20" y="214" class="text-gray" font-size="11" font-family="Arial, sans-serif">Storage</text>
+  <line x1="0" y1="226" x2="220" y2="226" class="divider"/>
+
+  <!-- User Management - HIGHLIGHTED SECTION -->
+  <rect x="0" y="226" width="220" height="26" fill="#1a2060"/>
+  <text x="14" y="244" fill="#aac0ff" font-size="12" font-weight="bold" font-family="Arial, sans-serif">User Management</text>
+  <line x1="0" y1="252" x2="220" y2="252" class="divider"/>
+
+  <!-- User Management sub-items -->
+  <!-- Users - active -->
+  <rect x="0" y="252" width="220" height="30" class="sidebar-section"/>
+  <rect x="0" y="252" width="4" height="30" fill="#ff0454"/>
+  <text x="22" y="272" fill="white" font-size="12" font-weight="bold" font-family="Arial, sans-serif">Users</text>
+
+  <!-- Groups -->
+  <rect x="0" y="282" width="220" height="28" class="sidebar-item"/>
+  <text x="22" y="300" class="text-gray" font-size="12" font-family="Arial, sans-serif">Groups</text>
+
+  <!-- Role Bindings -->
+  <rect x="0" y="310" width="220" height="28" class="sidebar-item"/>
+  <text x="22" y="328" class="text-gray" font-size="12" font-family="Arial, sans-serif">Role Bindings</text>
+
+  <!-- Cluster Role Bindings -->
+  <rect x="0" y="338" width="220" height="28" class="sidebar-item"/>
+  <text x="22" y="356" class="text-gray" font-size="12" font-family="Arial, sans-serif">Cluster Role Bindings</text>
+
+  <line x1="0" y1="366" x2="220" y2="366" class="divider"/>
+
+  <!-- Administration section -->
+  <text x="20" y="386" class="text-gray" font-size="11" font-family="Arial, sans-serif">Administration</text>
+
+  <!-- Main content area -->
+  <rect x="220" y="48" width="780" height="452" class="main-bg"/>
+
+  <!-- Breadcrumb -->
+  <text x="236" y="76" class="text-gray" font-size="12" font-family="Arial, sans-serif">User Management</text>
+  <text x="356" y="76" class="text-gray" font-size="12" font-family="Arial, sans-serif">></text>
+  <text x="368" y="76" fill="#aac0ff" font-size="12" font-family="Arial, sans-serif">Users</text>
+
+  <!-- Page Title + Actions -->
+  <text x="236" y="108" fill="white" font-size="20" font-weight="bold" font-family="Arial, sans-serif">Users</text>
+
+  <!-- Create User Button -->
+  <rect x="860" y="90" width="124" height="32" rx="4" class="btn-primary"/>
+  <text x="878" y="111" fill="white" font-size="12" font-weight="bold" font-family="Arial, sans-serif">Create User</text>
+
+  <!-- Filter bar -->
+  <rect x="236" y="124" width="380" height="32" rx="4" fill="#252540"/>
+  <rect x="236" y="124" width="380" height="32" rx="4" fill="none" stroke="#3a3a5a" stroke-width="1"/>
+  <text x="250" y="144" class="text-gray" font-size="12" font-family="Arial, sans-serif">Filter by name...</text>
+
+  <!-- Table -->
+  <rect x="236" y="170" width="748" height="36" class="table-header" rx="2"/>
+  <text x="250" y="193" fill="#c0c0e0" font-size="12" font-weight="bold" font-family="Arial, sans-serif">Name</text>
+  <text x="450" y="193" fill="#c0c0e0" font-size="12" font-weight="bold" font-family="Arial, sans-serif">Identity Provider</text>
+  <text x="680" y="193" fill="#c0c0e0" font-size="12" font-weight="bold" font-family="Arial, sans-serif">Created</text>
+
+  <!-- Checkbox column header -->
+  <rect x="236" y="178" width="16" height="16" rx="2" fill="none" stroke="#5050a0" stroke-width="1.5"/>
+
+  <!-- Row 1 - paris-user -->
+  <rect x="236" y="206" width="748" height="40" fill="#1e1e38"/>
+  <rect x="236" y="214" width="16" height="16" rx="2" fill="none" stroke="#5050a0" stroke-width="1.5"/>
+  <text x="262" y="230" fill="#7ab0ff" font-size="13" font-family="Arial, sans-serif" text-decoration="underline">paris-user</text>
+  <text x="450" y="230" class="text-gray" font-size="12" font-family="Arial, sans-serif">htpasswd</text>
+  <text x="680" y="230" class="text-gray" font-size="12" font-family="Arial, sans-serif">2 hours ago</text>
+
+  <!-- Row 2 - prague-user -->
+  <rect x="236" y="246" width="748" height="40" class="table-row-alt"/>
+  <rect x="236" y="254" width="16" height="16" rx="2" fill="none" stroke="#5050a0" stroke-width="1.5"/>
+  <text x="262" y="270" fill="#7ab0ff" font-size="13" font-family="Arial, sans-serif" text-decoration="underline">prague-user</text>
+  <text x="450" y="270" class="text-gray" font-size="12" font-family="Arial, sans-serif">htpasswd</text>
+  <text x="680" y="270" class="text-gray" font-size="12" font-family="Arial, sans-serif">2 hours ago</text>
+
+  <!-- Row 3 - admin -->
+  <rect x="236" y="286" width="748" height="40" fill="#1e1e38"/>
+  <rect x="236" y="294" width="16" height="16" rx="2" fill="none" stroke="#5050a0" stroke-width="1.5"/>
+  <text x="262" y="310" fill="#7ab0ff" font-size="13" font-family="Arial, sans-serif" text-decoration="underline">admin</text>
+  <text x="450" y="310" class="text-gray" font-size="12" font-family="Arial, sans-serif">htpasswd</text>
+  <text x="680" y="310" class="text-gray" font-size="12" font-family="Arial, sans-serif">5 days ago</text>
+
+  <!-- Row separator lines -->
+  <line x1="236" y1="206" x2="984" y2="206" stroke="#2a2a4a" stroke-width="1"/>
+  <line x1="236" y1="246" x2="984" y2="246" stroke="#2a2a4a" stroke-width="1"/>
+  <line x1="236" y1="286" x2="984" y2="286" stroke="#2a2a4a" stroke-width="1"/>
+  <line x1="236" y1="326" x2="984" y2="326" stroke="#2a2a4a" stroke-width="1"/>
+
+  <!-- Count info -->
+  <text x="236" y="358" class="text-gray" font-size="12" font-family="Arial, sans-serif">3 Users</text>
+
+  <!-- Pagination area -->
+  <rect x="870" y="340" width="30" height="28" rx="3" fill="#252540" stroke="#3a3a5a" stroke-width="1"/>
+  <text x="879" y="358" class="text-gray" font-size="12" font-family="Arial, sans-serif">&lt;</text>
+  <rect x="906" y="340" width="30" height="28" rx="3" fill="#252540" stroke="#3a3a5a" stroke-width="1"/>
+  <text x="915" y="358" class="text-gray" font-size="12" font-family="Arial, sans-serif">&gt;</text>
+
+  <!-- Footer info bar -->
+  <rect x="220" y="470" width="780" height="30" fill="#141428"/>
+  <line x1="220" y1="470" x2="1000" y2="470" class="divider"/>
+  <text x="236" y="489" class="text-gray" font-size="11" font-family="Arial, sans-serif">OpenShift Container Platform 4.14  |  cluster: production-cluster</text>
+</svg>

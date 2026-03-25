@@ -1,204 +1,410 @@
-# Déploiements et DaemonSets dans OpenShift
+# Deployments et DaemonSets dans OpenShift
 
-#### Introduction
+Les **Deployments** et les **DaemonSets** sont les deux workloads les plus fréquemment utilisés dans un cluster OpenShift. Bien qu'ils partagent des mécanismes communs (sélecteurs de pods, templates de pods, stratégies de mise à jour), ils répondent à des besoins fondamentalement différents : le Deployment orchestre les applications stateless avec un nombre variable de réplicas, tandis que le DaemonSet garantit la présence d'un agent sur chaque nœud du cluster.
 
-Les déploiements et les DaemonSets sont des composantes essentielles de la gestion des applications conteneurisées dans OpenShift. Tandis que les déploiements permettent de déployer, mettre à jour et gérer les applications de manière déclarative, les DaemonSets assurent qu'un pod spécifique est exécuté sur chaque nœud du cluster. Comprendre comment fonctionnent ces deux concepts dans OpenShift est crucial pour assurer la stabilité, la scalabilité et la continuité des services.
+---
 
-#### Objectifs de la Section
+## Objectifs de la section
 
-L'objectif principal de cette section est d'explorer en profondeur les déploiements et les DaemonSets dans OpenShift. Nous allons découvrir comment ils fonctionnent, leurs fonctionnalités clés, et comment les utiliser efficacement pour gérer des applications en production. À la fin de cette section, vous devriez être capable de :
-- Comprendre les concepts fondamentaux des déploiements et des DaemonSets.
-- Utiliser différentes stratégies de déploiement.
-- Créer et gérer des DaemonSets.
-- Maintenir la disponibilité des applications et des tâches critiques pendant les mises à jour.
+À la fin de cette section, vous serez capable de :
 
-#### Les Déploiements dans OpenShift
+- Décrire l'architecture d'un Deployment et de ses composants (ReplicaSet, pods)
+- Écrire un manifest YAML complet et annoté pour un Deployment
+- Configurer et comprendre les paramètres d'une stratégie de rolling update
+- Déclencher une mise à jour et un rollback via `oc`
+- Créer et configurer un DaemonSet avec ciblage de nœuds
+- Identifier les cas d'usage appropriés pour chaque type de workload
 
-##### Concepts Fondamentaux
+---
 
-Les déploiements dans OpenShift, comme dans Kubernetes, sont des ressources déclaratives qui gèrent la mise à jour des applications. Ils permettent aux utilisateurs de spécifier l'état souhaité des applications, et le contrôleur de déploiement s'assure que l'état réel des pods et des réplicas correspond à cet état souhaité.
+## Les Deployments dans OpenShift
 
-Un déploiement se compose de plusieurs éléments essentiels :
-- **Template de Pod** : Décrit les conteneurs à exécuter, leurs images, ressources, et autres configurations.
-- **Stratégies de Déploiement** : Déterminent comment les mises à jour des applications doivent être effectuées.
+### Architecture d'un Deployment
 
-##### Structure d'un Template de Pod
+Un **Deployment** est un objet déclaratif qui délègue la gestion des pods à une chaîne de contrôleurs. Lorsque vous créez ou modifiez un Deployment, le contrôleur de déploiement crée un nouveau **ReplicaSet**, qui prend en charge la création et le maintien des **pods**.
 
-Le template de pod est une section cruciale d'un manifest de déploiement. Il définit la configuration des pods à déployer, y compris les conteneurs, les volumes, les variables d'environnement, et d'autres spécifications nécessaires pour le bon fonctionnement de l'application.
-
-```yaml
-template:
-  metadata:
-    labels:
-      app: my-app
-  spec:
-    containers:
-    - name: my-container
-      image: my-image:latest
-      ports:
-      - containerPort: 8080
-      resources:
-        requests:
-          memory: "64Mi"
-          cpu: "250m"
-        limits:
-          memory: "128Mi"
-          cpu: "500m"
-      env:
-      - name: ENV_VAR
-        value: "value"
+```
+Deployment  ──(gère)──►  ReplicaSet (actif)   ──(crée)──►  Pod-1
+                                                          ──►  Pod-2
+                                                          ──►  Pod-3
+            ──(conserve)──►  ReplicaSet (précédent, 0 replicas)
 ```
 
-Dans cet exemple, le template de pod spécifie un conteneur nommé `my-container` utilisant l'image `my-image:latest`. Le conteneur expose le port 8080 et a des ressources demandées et limitées pour la mémoire et le CPU. Une variable d'environnement `ENV_VAR` est également définie.
+Cette architecture en deux niveaux est ce qui rend les rollbacks instantanés : il suffit de réactiver un ReplicaSet précédent.
 
-##### Stratégies de Déploiement
+![Architecture d'un Deployment OpenShift](./images/deployment.svg)
 
-Les déploiements dans OpenShift offrent plusieurs stratégies pour mettre à jour les applications, chacune ayant ses avantages selon les besoins spécifiques :
+*Schéma d'un Deployment gérant plusieurs ReplicaSets au fil des révisions.*
 
-1. **Rolling Updates** :
-   - **Description** : Met à jour progressivement les pods de l'application, en remplaçant petit à petit les anciens pods par les nouveaux.
-   - **Avantages** : Minimisation des temps d'arrêt, maintien de la disponibilité de l'application.
-   - **Utilisation** : Idéale pour les mises à jour incrémentales sans interruption de service.
+:::info Révisions de déploiement
+Chaque modification du template de pod (changement d'image, de variables d'environnement, de ressources) crée une nouvelle **révision**. Par défaut, OpenShift conserve les 10 dernières révisions, permettant des rollbacks vers n'importe laquelle d'entre elles.
+:::
 
-2. **Recreate** :
-   - **Description** : Arrête tous les pods existants avant de créer les nouveaux pods.
-   - **Avantages** : Simplicité, utilisation dans les cas où les mises à jour en place ne sont pas possibles.
-   - **Utilisation** : Adaptée pour les mises à jour majeures où une interruption temporaire est acceptable.
+---
 
-##### Exemple de Manifest de Déploiement
+### Structure d'un manifest de Deployment
 
-Voici un exemple complet de manifest de déploiement pour une application simple :
+Voici un manifest complet et annoté couvrant l'ensemble des sections importantes d'un Deployment :
 
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: my-deployment
+  name: mon-application          # Nom unique du Deployment dans le namespace
+  namespace: mon-projet
   labels:
-    app: my-app
+    app: mon-application         # Labels pour identifier et filtrer la ressource
+    version: "1.0"
 spec:
-  replicas: 3
-  selector:
+  replicas: 3                    # Nombre de pods souhaités en permanence
+
+  selector:                      # Sélecteur : doit correspondre aux labels du template
     matchLabels:
-      app: my-app
-  template:
+      app: mon-application
+
+  template:                      # Template des pods gérés par ce Deployment
     metadata:
       labels:
-        app: my-app
+        app: mon-application     # Doit correspondre au sélecteur ci-dessus
+        version: "1.0"
     spec:
       containers:
-      - name: my-container
-        image: my-image:latest
+      - name: app
+        image: registry.example.com/mon-app:1.0.0   # Image avec tag explicite (pas "latest")
         ports:
         - containerPort: 8080
-        resources:
+          protocol: TCP
+
+        resources:               # Toujours définir les requests et limits
           requests:
-            memory: "64Mi"
-            cpu: "250m"
-          limits:
             memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
             cpu: "500m"
+
         env:
-        - name: ENV_VAR
-          value: "value"
-  strategy:
+        - name: APP_ENV
+          value: "production"
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:        # Injection depuis un Secret OpenShift
+              name: db-credentials
+              key: password
+
+        readinessProbe:          # Sonde de disponibilité : le pod reçoit du trafic uniquement si OK
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+
+        livenessProbe:           # Sonde de vivacité : le pod est redémarré si la sonde échoue
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+
+  strategy:                      # Stratégie de mise à jour (voir section dédiée)
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
-      maxUnavailable: 1
+      maxUnavailable: 0
+
+  revisionHistoryLimit: 5        # Nombre de ReplicaSets précédents conservés pour rollback
 ```
 
-Ce manifest de déploiement crée un déploiement nommé `my-deployment`, avec trois réplicas de `my-container` utilisant l'image `my-image:latest`. La stratégie de déploiement utilisée est `RollingUpdate`, avec un maximum de 1 pod supplémentaire et 1 pod indisponible pendant la mise à jour.
+:::tip Toujours utiliser des tags d'image explicites
+N'utilisez jamais `image: mon-app:latest` en production. Un tag fixe comme `1.0.0` ou un digest SHA garantit la reproductibilité et facilite les rollbacks. OpenShift ne peut pas détecter qu'une image `latest` a changé sans un trigger explicite.
+:::
 
-##### Déclencher une Mise à Jour
+---
 
-Pour déclencher une mise à jour d'un déploiement dans OpenShift, vous pouvez modifier l'image du conteneur ou d'autres paramètres dans le template de pod, puis appliquer ces modifications. Par exemple, pour mettre à jour l'image du conteneur, vous pouvez exécuter la commande suivante :
+### Visualiser un Deployment dans la console OpenShift
+
+La console web OpenShift offre une vue graphique détaillée de chaque Deployment : état des pods, historique des révisions, métriques de ressources et accès aux logs.
+
+![Vue d'un Deployment dans la console OpenShift](./images/console-deployment-view.svg)
+
+*La console OpenShift affiche l'état en temps réel des pods, les révisions disponibles et les options de scaling.*
+
+Pour accéder à cette vue :
+
+1. Connectez-vous à la console OpenShift (`https://<cluster>/`)
+2. Naviguez vers **Workloads → Deployments**
+3. Sélectionnez votre projet dans le sélecteur de namespace en haut
+4. Cliquez sur le nom du Deployment pour accéder au détail
+
+---
+
+### Stratégies de déploiement
+
+OpenShift supporte deux stratégies de mise à jour pour les Deployments Kubernetes standards.
+
+#### RollingUpdate (mise à jour progressive)
+
+La stratégie **RollingUpdate** est la stratégie par défaut. Elle remplace progressivement les anciens pods par les nouveaux, en garantissant qu'un minimum de pods reste disponible tout au long de la mise à jour.
+
+![Déroulement d'une mise à jour progressive (rolling update)](./images/rolling-update-diagram.svg)
+
+*Lors d'un rolling update, les nouveaux pods sont créés avant que les anciens soient supprimés, maintenant la disponibilité du service.*
+
+Le processus se déroule ainsi :
+
+1. Un nouveau ReplicaSet est créé avec la nouvelle configuration
+2. Des pods du nouveau ReplicaSet sont créés (dans la limite de `maxSurge`)
+3. Dès que les nouveaux pods sont prêts (readinessProbe OK), des pods de l'ancien ReplicaSet sont supprimés
+4. L'opération se répète jusqu'à ce que tous les pods aient été remplacés
+
+#### Paramètres du RollingUpdate
+
+| Paramètre | Type | Description | Exemple |
+|---|---|---|---|
+| `maxSurge` | Entier ou % | Nombre maximum de pods supplémentaires pouvant exister au-delà du nombre souhaité pendant la mise à jour | `1` ou `25%` |
+| `maxUnavailable` | Entier ou % | Nombre maximum de pods pouvant être indisponibles pendant la mise à jour | `0` ou `25%` |
+
+**Exemples de configurations courantes :**
+
+| Scénario | maxSurge | maxUnavailable | Comportement |
+|---|---|---|---|
+| Disponibilité maximale (production) | `1` | `0` | Crée 1 nouveau pod avant d'en supprimer un ancien. Plus lent mais sans interruption. |
+| Déploiement rapide (hors-prod) | `25%` | `25%` | Remplace 25% des pods simultanément. Plus rapide mais accepte une disponibilité réduite. |
+| Ressources limitées | `0` | `1` | Supprime 1 ancien pod avant d'en créer un nouveau. Économe en ressources. |
+
+:::warning maxSurge: 0 et maxUnavailable: 0 sont incompatibles
+Si les deux paramètres sont à `0`, Kubernetes ne peut ni créer de nouveaux pods ni supprimer les anciens, bloquant définitivement la mise à jour. Au moins l'un des deux doit être supérieur à zéro.
+:::
+
+#### Recreate (recréation complète)
+
+La stratégie **Recreate** arrête tous les pods existants avant de créer les nouveaux. Cela provoque une interruption de service, mais garantit qu'aucune ancienne et nouvelle version de l'application ne coexistent.
+
+```yaml
+strategy:
+  type: Recreate
+```
+
+:::info Quand utiliser Recreate ?
+Utilisez `Recreate` lorsque votre application ne supporte pas deux versions coexistantes, par exemple lors de migrations de schéma de base de données incompatibles, ou lorsque l'application utilise un verrou exclusif sur une ressource (fichier, port, etc.).
+:::
+
+---
+
+### Commandes opérationnelles
+
+#### Déclencher une mise à jour d'image
 
 ```bash
-oc set image deployment/my-deployment my-container=my-image:new-version
+# Mettre à jour l'image d'un conteneur dans un Deployment
+oc set image deployment/mon-application app=registry.example.com/mon-app:1.1.0 -n mon-projet
 ```
 
-Cette commande met à jour l'image de `my-container` dans le déploiement `my-deployment` avec `my-image:new-version`. Le contrôleur de déploiement commencera alors une mise à jour progressive des pods selon la stratégie spécifiée (par exemple, RollingUpdate).
-
-##### Déclencher un Rollback
-
-En cas de problème avec une mise à jour, OpenShift permet de revenir rapidement à une version précédente du déploiement. Pour déclencher un rollback, utilisez la commande suivante :
+#### Suivre le déroulement d'une mise à jour
 
 ```bash
-oc rollout undo deployment/my-deployment
+# Surveiller le déploiement en temps réel
+oc rollout status deployment/mon-application -n mon-projet
+
+# Afficher l'historique des révisions
+oc rollout history deployment/mon-application -n mon-projet
+
+# Détailler une révision spécifique
+oc rollout history deployment/mon-application --revision=3 -n mon-projet
 ```
 
-Cette commande restaure le déploiement `my-deployment` à la version précédente connue comme étant stable. Le contrôleur de déploiement remplacera les pods actuels par ceux définis dans la configuration précédente.
+#### Effectuer un rollback
 
-##### Maintien de la Disponibilité
+```bash
+# Revenir à la révision précédente
+oc rollout undo deployment/mon-application -n mon-projet
 
-Les déploiements sont conçus pour maintenir la disponibilité des applications pendant les mises à jour. Grâce aux stratégies de déploiement comme les rolling updates, OpenShift s'assure que de nouvelles instances de pods sont créées avant que les anciennes soient supprimées, garantissant ainsi que l'application reste accessible aux utilisateurs pendant toute la durée de la mise à jour.
+# Revenir à une révision spécifique
+oc rollout undo deployment/mon-application --to-revision=2 -n mon-projet
+```
 
-#### Les DaemonSets dans OpenShift
+#### Scaler un Deployment
 
-##### Concepts Fondamentaux
+```bash
+# Modifier le nombre de réplicas
+oc scale deployment/mon-application --replicas=5 -n mon-projet
 
-Les DaemonSets dans OpenShift, comme dans Kubernetes, sont des ressources déclaratives qui s'assurent qu'un pod spécifique est exécuté sur tous (ou certains) nœuds d'un cluster.
+# Mettre en pause un déploiement (pour effectuer plusieurs modifications avant de les appliquer)
+oc rollout pause deployment/mon-application -n mon-projet
 
-##### Spécificités par Rapport aux Déploiements
+# Reprendre un déploiement en pause
+oc rollout resume deployment/mon-application -n mon-projet
+```
 
-Les DaemonSets diffèrent des déploiements de plusieurs façons :
-- **Ciblage des Nœuds** : Les DaemonSets s'assurent qu'un pod est exécuté sur chaque nœud spécifié, tandis que les déploiements gèrent la scalabilité des pods sans garantie de couverture sur tous les nœuds.
-- **Scalabilité** : Les DaemonSets ne gèrent pas la scalabilité de la même manière que les déploiements. Ils se concentrent sur l'exécution d'un pod par nœud.
-- **Mises à Jour** : Les mises à jour des DaemonSets sont appliquées de manière contrôlée pour minimiser les interruptions sur chaque nœud.
-- **Tolérance aux Pannes** : Les DaemonSets sont utilisés pour des tâches qui nécessitent une haute disponibilité et tolérance aux pannes à l'échelle des nœuds.
+:::tip Mettre en pause pour les modifications groupées
+Si vous devez modifier plusieurs propriétés d'un Deployment (image, variables d'environnement, ressources), mettez-le en pause avant d'effectuer les modifications, puis reprenez-le. Cela déclenche une seule mise à jour au lieu d'une par modification.
+:::
 
-##### Exemple de Manifest de DaemonSet
+---
 
-Voici un exemple complet de manifest de DaemonSet pour une application simple :
+## Les DaemonSets dans OpenShift
+
+### Concept et architecture
+
+Un **DaemonSet** assure qu'un pod est exécuté sur **chaque nœud éligible** du cluster. La logique de scheduling est inversée par rapport à un Deployment : ce n'est pas le scheduler qui décide où placer les pods, c'est le contrôleur DaemonSet qui cible explicitement chaque nœud.
+
+![Architecture d'un DaemonSet](./images/daemonset.svg)
+
+*Chaque nœud du cluster héberge exactement une instance du pod géré par le DaemonSet.*
+
+Comportement automatique :
+
+- Quand un **nouveau nœud rejoint** le cluster → le DaemonSet y crée automatiquement un pod
+- Quand un **nœud est supprimé** du cluster → le pod est automatiquement supprimé (garbage collected)
+- Quand le **DaemonSet est supprimé** → tous ses pods sont supprimés sur l'ensemble des nœuds
+
+---
+
+### Cas d'usage des DaemonSets
+
+| Catégorie | Outil | Rôle |
+|---|---|---|
+| Collecte de logs | Fluentd, Filebeat, Logstash | Collecte les logs des conteneurs et du système sur chaque nœud |
+| Métriques système | Prometheus Node Exporter | Expose les métriques CPU, mémoire, disque, réseau du nœud |
+| Réseau | Calico, Weave Net, Cilium | Configure les règles réseau et le routage sur chaque nœud |
+| Stockage | Ceph, GlusterFS (agents) | Gère l'accès au stockage distribué depuis chaque nœud |
+| Sécurité | Falco, Sysdig | Surveille les appels système et détecte les comportements anormaux |
+| Cache | node-local-dns | Fournit un cache DNS local sur chaque nœud pour réduire la latence |
+
+:::info Les DaemonSets système dans OpenShift
+OpenShift lui-même utilise massivement des DaemonSets pour ses composants internes. On trouve notamment des DaemonSets pour les agents de monitoring (`node-exporter`), les composants réseau (`ovs-node`) et les agents de nœud (`machine-config-daemon`). Ces ressources sont visibles dans les namespaces `openshift-*`.
+:::
+
+---
+
+### Structure d'un manifest de DaemonSet
 
 ```yaml
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: my-daemonset
+  name: collecteur-logs
+  namespace: observabilite
   labels:
-    app: my-daemon
+    app: collecteur-logs
 spec:
   selector:
     matchLabels:
-      app: my-daemon
+      app: collecteur-logs
+
   template:
     metadata:
       labels:
-        app: my-daemon
+        app: collecteur-logs
     spec:
+      # Tolérations : permettent au pod d'être schedulé sur des nœuds "taintés"
+      # (ex. nœuds maîtres qui rejettent par défaut les pods utilisateurs)
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+
       containers:
-      - name: my-container
-        image: my-image:latest
-        ports:
-        - containerPort: 8080
+      - name: fluentd
+        image: fluentd:v1.16
         resources:
           requests:
-            memory: "64Mi"
-            cpu: "250m"
-          limits:
             memory: "128Mi"
-            cpu: "500m"
-        env:
-        - name: ENV_VAR
-          value: "value"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+
+        # Montage du système de fichiers du nœud pour accéder aux logs
+        volumeMounts:
+        - name: varlog
+          mountPath: /var/log
+          readOnly: true
+        - name: varlibdockercontainers
+          mountPath: /var/lib/docker/containers
+          readOnly: true
+
+      # Terminaison gracieuse étendue pour vider les buffers avant arrêt
+      terminationGracePeriodSeconds: 30
+
+      volumes:
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
+
+  # Stratégie de mise à jour du DaemonSet
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1          # Mise à jour d'un nœud à la fois
 ```
 
-Ce manifest de DaemonSet crée un DaemonSet nommé `my-daemonset`, déployant un pod `my-container` sur chaque nœud du cluster utilisant l'image `my-image:latest`.
+:::warning Accès au système de fichiers hôte
+Les DaemonSets d'agents de logs utilisent des volumes `hostPath` pour lire les logs du nœud. Dans OpenShift, cet accès est soumis aux politiques de sécurité (SCC — Security Context Constraints). Assurez-vous que le ServiceAccount du DaemonSet dispose des permissions appropriées.
+:::
 
-##### Cas d'Utilisation des DaemonSets
+---
 
-Les DaemonSets sont utilisés dans des scénarios spécifiques où il est crucial
+### Cibler un sous-ensemble de nœuds
 
- que des tâches soient exécutées sur chaque nœud. Voici quelques cas d'utilisation courants :
-- **Monitoring des Nœuds** : Utilisation de DaemonSets pour déployer des agents de monitoring comme Prometheus Node Exporter sur chaque nœud pour collecter des métriques.
-- **Collecte de Logs** : Déploiement de collecteurs de logs comme Fluentd ou Logstash pour centraliser les logs des nœuds et des applications.
-- **Configuration de Réseau** : Utilisation de DaemonSets pour configurer des réseaux avec des outils comme Calico ou Weave sur chaque nœud.
-- **Sécurité** : Déploiement d'outils de sécurité comme Falco ou d'autres systèmes de détection d'intrusion pour surveiller et sécuriser chaque nœud.
+Il est possible de restreindre un DaemonSet à certains nœuds via un **nodeSelector** ou une **nodeAffinity**.
 
-![daemonset from ui](./images/daemonset-ui.png)
+#### Via un nodeSelector (simple)
 
-#### Conclusion
+```yaml
+spec:
+  template:
+    spec:
+      nodeSelector:
+        kubernetes.io/os: linux
+        node-role.kubernetes.io/worker: ""
+```
 
-Les déploiements et les DaemonSets dans OpenShift jouent des rôles cruciaux dans la gestion efficace des applications et des tâches critiques à l'échelle des nœuds du cluster. En offrant des stratégies de déploiement flexibles et des mécanismes robustes pour les mises à jour et les rollbacks, OpenShift permet de maintenir la continuité des services et de réduire les temps d'arrêt. Maîtriser ces concepts vous permettra d'assurer une gestion fluide et stable de vos applications en production, contribuant ainsi à la résilience et à la fiabilité de vos systèmes.
+#### Via une nodeAffinity (avancée)
+
+```yaml
+spec:
+  template:
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: type
+                operator: In
+                values:
+                - monitoring-node
+```
+
+---
+
+### Stratégie de mise à jour des DaemonSets
+
+Les DaemonSets supportent deux stratégies de mise à jour :
+
+| Stratégie | Description | Recommandation |
+|---|---|---|
+| `RollingUpdate` | Met à jour les pods nœud par nœud, en contrôlant le rythme via `maxUnavailable` | Recommandée pour la plupart des cas |
+| `OnDelete` | Les pods ne sont mis à jour que lorsqu'ils sont manuellement supprimés | Pour les mises à jour manuelles et contrôlées |
+
+---
+
+## Différences entre Deployment et DaemonSet
+
+| Critère | Deployment | DaemonSet |
+|---|---|---|
+| Nombre de pods | Configurable (replicas) | 1 par nœud éligible |
+| Placement | Décidé par le scheduler | Forcé sur chaque nœud |
+| Scaling | Horizontal (oc scale) | Lié au nombre de nœuds |
+| Cas d'usage | Applications stateless | Agents système |
+| Rollback | Oui (via révisions) | Non (pas de révisions) |
+| Stratégie de mise à jour | RollingUpdate, Recreate | RollingUpdate, OnDelete |
+
+:::tip Synthèse du choix
+- Besoin de **N réplicas interchangeables** → **Deployment**
+- Besoin de **1 agent sur chaque nœud** → **DaemonSet**
+:::

@@ -1,218 +1,656 @@
 # Services et Routes dans OpenShift
 
-### Introduction
+Dans OpenShift, exposer une application de façon fiable et sécurisée nécessite de maîtriser deux abstractions fondamentales : les **Services** et les **Routes**. Les Services assurent l'équilibrage de charge interne entre les pods, tandis que les Routes (ou Ingress) permettent d'accéder aux applications depuis l'extérieur du cluster. Cette section détaille leur fonctionnement, leurs types, et les bonnes pratiques de configuration.
 
-Dans OpenShift, la gestion du trafic réseau pour les applications conteneurisées est cruciale pour garantir leur accessibilité et leur sécurité. Les **services** et les **routes** sont des composants clés de cette gestion. Les services permettent de regrouper et d'exposer des pods à l'intérieur du cluster, tandis que les routes facilitent l'accès externe aux applications. Ce cours explore en profondeur ces deux concepts, en expliquant leurs types, cas d'usage, et configurations.
+![Relation entre Services et Routes dans OpenShift](./images/service-route-diagram.svg)
 
-### Objectifs de la Section
+*Vue d'ensemble : un Service regroupe les pods par labels, une Route expose le Service vers l'extérieur via l'Ingress Controller*
+
+---
+
+## Objectifs de la section
 
 À la fin de cette section, vous serez capable de :
-1. Comprendre à quoi servent les services dans OpenShift.
-2. Expliquer les différents types de services : ClusterIP, NodePort, LoadBalancer, et leurs cas d'usage.
-3. Comprendre le rôle des routes dans OpenShift pour exposer les applications externes.
-4. Expliquer comment fonctionne l'Ingress Controller et les différentes options d'exposition TLS : passthrough, reencrypt, et edge.
 
-## Les Services dans OpenShift
+1. Expliquer le rôle et le fonctionnement des Services dans OpenShift.
+2. Distinguer les types de Services (ClusterIP, NodePort, LoadBalancer) et choisir le type adapté à chaque situation.
+3. Comprendre le rôle de l'Ingress Controller et son articulation avec les Routes.
+4. Configurer une Route OpenShift avec les différents modes de terminaison TLS.
+5. Naviguer dans la console OpenShift pour inspecter Services et Routes.
 
-### Concepts Fondamentaux
+---
 
-Les services dans OpenShift, comme dans Kubernetes, sont utilisés pour exposer les pods à l'intérieur du cluster, permettant une communication stable entre eux. Les services abstraient les pods individuels et offrent une adresse IP stable, assurant que même si des pods sont recréés ou déplacés, le trafic peut toujours les atteindre via le service.
+## 1. Les Services dans OpenShift
 
-Un service associe un groupe de pods par le biais de labels, et dirige le trafic vers ces pods via un mécanisme de **load balancing interne**.
+### 1.1 Pourquoi les Services sont indispensables
 
-### Types de Services
+Les pods sont des entités **éphémères** : ils peuvent être recréés, redémarrés, ou migrés sur un autre nœud à tout moment. À chaque recréation, le pod obtient une nouvelle adresse IP. Si une application frontend communiquait directement avec l'IP d'un pod backend, elle perdrait sa connexion à chaque redémarrage du backend.
 
-Il existe plusieurs types de services dans OpenShift, chacun ayant ses propres cas d'utilisation :
+Les Services résolvent ce problème en fournissant :
 
-#### 1. **ClusterIP (Service par défaut)**
+- Une **adresse IP virtuelle stable** (ClusterIP) qui ne change pas tant que le Service existe.
+- Un **nom DNS stable** (`<nom-service>.<namespace>.svc.cluster.local`) résolu automatiquement par CoreDNS.
+- Un mécanisme d'**équilibrage de charge** vers tous les pods sains associés.
 
-##### Description
-Le type de service **ClusterIP** est le plus basique et le plus utilisé. Il expose le service à l'intérieur du cluster, ce qui signifie que le service est accessible uniquement depuis d'autres pods dans le même cluster. Une adresse IP interne est attribuée au service, et le trafic est routé vers les pods sélectionnés par le service.
+### 1.2 Mécanisme de sélection des pods
 
-##### Cas d'usage
-- **Communication interne** : Utilisé pour permettre aux pods d'une application de communiquer entre eux.
-- **Services backend** : Idéal pour des bases de données, caches, ou autres composants internes non destinés à être accessibles depuis l'extérieur du cluster.
-
-##### Exemple de configuration
+Un Service sélectionne ses pods cibles grâce à un **selector** basé sur les labels des pods. Lorsqu'un pod correspondant aux labels est créé ou supprimé, le Service met à jour automatiquement sa liste d'**Endpoints**.
 
 ```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: my-clusterip-service
+# Le Service sélectionne les pods avec ces labels
 spec:
   selector:
-    app: my-app
-  ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 8080
-  type: ClusterIP
+    app: backend
+    version: v2
 ```
 
-Dans cet exemple, un service `ClusterIP` expose les pods avec le label `app: my-app` sur le port 80.
+```bash
+# Inspecter les endpoints d'un service
+oc get endpoints mon-service -n mon-namespace
+```
 
-#### 2. **NodePort**
+:::info Endpoints et EndpointSlices
+Kubernetes maintient un objet `Endpoints` (ou `EndpointSlice` depuis Kubernetes 1.21) qui liste les IP:port de tous les pods sains sélectionnés par le Service. C'est cet objet que kube-proxy (ou OVN-Kubernetes) utilise pour programmer les règles de routage.
+:::
 
-##### Description
-Le service de type **NodePort** expose le service sur un port spécifique de chaque nœud du cluster. Cela permet d'accéder au service depuis l'extérieur du cluster en utilisant l'adresse IP d'un nœud et le port alloué.
+---
 
-##### Cas d'usage
-- **Accès externe simple** : Utilisé lorsque vous avez besoin d'accéder au service depuis l'extérieur du cluster, mais sans infrastructure de load balancing externe.
-- **Test et développement** : Pratique pour des environnements de test ou des déploiements simples sans utiliser des configurations plus complexes comme des LoadBalancers ou des routes.
+## 2. Types de Services
 
-##### Exemple de configuration
+![Comparaison ClusterIP, NodePort, LoadBalancer](./images/clusterIP-vs-NodePort-vs-Loadbalancer.svg)
+
+*Les trois types de Services Kubernetes et leurs périmètres d'accessibilité*
+
+### Tableau de synthèse
+
+| Type | Accessible depuis | Adresse IP | Cas d'usage principal |
+|---|---|---|---|
+| **ClusterIP** | Intérieur du cluster uniquement | IP virtuelle interne | Communication inter-services |
+| **NodePort** | Extérieur via IP du nœud + port | IP du nœud + port 30000-32767 | Tests, accès direct sans LB |
+| **LoadBalancer** | Extérieur via IP publique dédiée | IP externe provisionnée par le cloud | Production sur cloud public |
+| **ExternalName** | Alias DNS vers un FQDN externe | Aucune IP (CNAME DNS) | Intégration de services externes |
+
+---
+
+### 2.1 ClusterIP
+
+#### Description
+
+Le type **ClusterIP** est le type par défaut. Il attribue au Service une adresse IP virtuelle accessible uniquement depuis l'intérieur du cluster. Aucun trafic externe ne peut atteindre directement cette IP.
+
+#### Résolution DNS
+
+Depuis n'importe quel pod du cluster :
+
+```
+mon-service.mon-namespace.svc.cluster.local → 172.30.X.X
+```
+
+Depuis le même namespace, le nom court suffit :
+
+```
+mon-service → 172.30.X.X
+```
+
+#### Exemple de configuration
 
 ```yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: my-nodeport-service
+  name: backend-api
+  namespace: production
+  labels:
+    app: backend
 spec:
   selector:
-    app: my-app
+    app: backend
   ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 8080
-    nodePort: 30007
+    - name: http
+      protocol: TCP
+      port: 80          # Port exposé par le Service
+      targetPort: 8080  # Port écouté par le conteneur
+  type: ClusterIP       # Valeur par défaut (peut être omise)
+```
+
+#### Vérification
+
+```bash
+# Créer le service
+oc apply -f backend-api-service.yaml
+
+# Vérifier
+oc get service backend-api -n production
+# NAME          TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+# backend-api   ClusterIP   172.30.47.182   <none>        80/TCP    5m
+
+# Tester depuis un pod
+oc exec -it frontend-pod -- curl http://backend-api/health
+```
+
+:::tip Quand utiliser ClusterIP
+Utilisez ClusterIP pour **tout service interne** : bases de données, APIs backend, caches, services de messaging. C'est le type le plus simple et le plus sécurisé car il n'expose rien à l'extérieur du cluster.
+:::
+
+---
+
+### 2.2 NodePort
+
+#### Description
+
+Le type **NodePort** étend ClusterIP en ouvrant un port sur **chaque nœud** du cluster (dans la plage 30000-32767). Le trafic arrivant sur `<IP-nœud>:<nodePort>` est redirigé vers le Service, puis réparti entre les pods.
+
+```
+Client externe → IP nœud 1:30007 ─┐
+                                    ├─→ Service ClusterIP → Pods
+Client externe → IP nœud 2:30007 ─┘
+```
+
+#### Exemple de configuration
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapp-nodeport
+  namespace: development
+spec:
+  selector:
+    app: webapp
+  ports:
+    - protocol: TCP
+      port: 80          # Port interne du Service
+      targetPort: 8080  # Port du conteneur
+      nodePort: 30080   # Port ouvert sur les nœuds (optionnel, assigné auto si omis)
   type: NodePort
 ```
 
-Dans cet exemple, le service `NodePort` est exposé sur le port 30007 de chaque nœud du cluster.
+#### Vérification
 
-#### 3. **LoadBalancer**
+```bash
+oc get service webapp-nodeport -n development
+# NAME              TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+# webapp-nodeport   NodePort   172.30.88.14    <none>        80:30080/TCP   2m
 
-##### Description
-Le service de type **LoadBalancer** expose le service à l'extérieur du cluster en configurant automatiquement un load balancer externe qui distribue le trafic vers les nœuds du cluster. Ce type de service est généralement utilisé dans les environnements cloud où les load balancers sont fournis par le fournisseur de cloud.
+# Accès depuis l'extérieur (remplacer par l'IP d'un nœud worker)
+curl http://192.168.1.101:30080/
+```
 
-##### Cas d'usage
-- **Environnements Cloud** : Idéal pour des déploiements en production sur des infrastructures cloud (AWS, GCP, Azure) où le load balancer est automatiquement provisionné.
-- **Exposition de services critiques** : Convient pour des applications nécessitant une haute disponibilité et une répartition automatique du trafic.
+:::warning Limites du NodePort en production
+- Le port exposé n'est **pas standard** (30000-32767), ce qui nécessite de le préciser dans les URLs ou de configurer un proxy devant.
+- Si un nœud tombe, les clients pointant vers cet IP perdent la connexion jusqu'à redirection.
+- Évitez NodePort en production. Préférez LoadBalancer (cloud) ou une Route OpenShift (tous environnements).
+:::
 
-##### Exemple de configuration dans un environnement cloud
+---
+
+### 2.3 LoadBalancer
+
+#### Description
+
+Le type **LoadBalancer** demande au fournisseur d'infrastructure (cloud ou solution bare-metal) de provisionner un load balancer externe qui obtient sa propre adresse IP publique. Le trafic est distribué depuis cette IP vers les nœuds du cluster, puis vers les pods via le mécanisme NodePort sous-jacent.
+
+```
+Internet → IP publique LB → Nœuds du cluster (NodePort) → Pods
+```
+
+#### Exemple de configuration
 
 ```yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: my-loadbalancer-service
+  name: webapp-public
+  namespace: production
+  annotations:
+    # Annotations spécifiques au cloud provider (exemple AWS)
+    service.beta.kubernetes.io/aws-load-balancer-type: "external"
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
 spec:
   selector:
-    app: my-app
+    app: webapp
   ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 8080
+    - protocol: TCP
+      port: 443
+      targetPort: 8443
   type: LoadBalancer
 ```
 
-Dans cet exemple, le service `LoadBalancer` demande la création d'un load balancer externe qui répartira le trafic sur les pods sélectionnés.
+#### Résultat après provisionnement
 
-![ClusterIP vs NodePort vs Loadbalancer](./images/clusterIP-vs-NodePort-vs-Loadbalancer.svg)
+```bash
+oc get service webapp-public -n production
+# NAME           TYPE           CLUSTER-IP      EXTERNAL-IP                        PORT(S)         AGE
+# webapp-public  LoadBalancer   172.30.15.90    a1b2c3.eu-west-1.elb.amazonaws.com 443:31205/TCP   3m
+```
 
-##### Utilisation de MetalLB pour les Environnements On-Premise
-Dans les environnements on-premise (sans cloud provider), vous pouvez utiliser un composant comme **MetalLB** pour simuler un service de type LoadBalancer. MetalLB fournit un load balancing en mode bare-metal pour Kubernetes, permettant d'allouer des IPs externes sur votre réseau pour exposer vos services.
+#### MetalLB pour les environnements on-premise
 
-## Les Routes dans OpenShift
+Dans les environnements sans cloud provider (bare-metal, on-premise), **MetalLB** permet d'utiliser le type LoadBalancer. MetalLB alloue des adresses IP depuis un pool configuré et les annonce via ARP (couche 2) ou BGP (couche 3).
 
-### Concepts Fondamentaux
+```yaml
+# Exemple de configuration MetalLB - IPAddressPool
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: production-pool
+  namespace: metallb-system
+spec:
+  addresses:
+    - 192.168.10.100-192.168.10.120
+```
 
-Les **routes** dans OpenShift permettent d'exposer des services internes à l'extérieur du cluster. Une route associe un nom de domaine (DNS) à un service, et dirige le trafic HTTP/HTTPS vers les pods gérés par ce service. Les routes sont spécifiques à OpenShift et offrent une couche supplémentaire de gestion du trafic par rapport aux services standard de Kubernetes.
+:::tip Quand utiliser LoadBalancer
+Utilisez LoadBalancer pour exposer directement un service TCP/UDP (non HTTP) en production sur un cloud public. Pour les applications web HTTP/HTTPS, préférez les **Routes OpenShift** ou un **Ingress** qui offrent plus de contrôle sur le routage et le TLS, pour un coût infrastructure moindre.
+:::
 
-### Fonctionnement de l'Ingress Controller
+---
 
-L'Ingress Controller dans OpenShift agit comme un proxy qui gère les routes et le trafic entrant dans le cluster. Il est responsable de recevoir les requêtes HTTP/HTTPS externes et de les router vers les services appropriés basés sur les configurations de route.
+## 3. Visualiser les Services dans la console OpenShift
 
-L'Ingress Controller peut également gérer la terminaison SSL/TLS, en s'assurant que le trafic est sécurisé entre les clients externes et les services dans le cluster.
+La console OpenShift Administrator permet d'inspecter et de gérer les Services directement depuis l'interface graphique, sans avoir besoin de la CLI.
 
-### Modes d'Exposition TLS
+![Vue console OpenShift : Services et Routes](./images/console-services-routes.svg)
 
-Lorsqu'on configure une route avec TLS dans OpenShift, il existe trois modes principaux pour gérer le chiffrement du trafic :
+*Console OpenShift — perspective Administrator > Networking > Services : liste des services avec leur type, ClusterIP, et ports associés*
 
-#### 1. **Edge Termination (Mode Edge)**
+### Navigation
 
-##### Description
-Dans le mode **Edge Termination**, la terminaison TLS (chiffrement/déchiffrement) est effectuée par l'Ingress Controller lui-même. Le trafic entre le client et l'Ingress Controller est sécurisé via TLS, mais une fois le trafic déchiffré, il est envoyé en clair aux pods cibles à l'intérieur du cluster.
+1. Connectez-vous à la console OpenShift en mode **Administrator**.
+2. Dans le menu latéral, cliquez sur **Networking** pour déplier la section.
+3. Sélectionnez **Services** pour voir la liste des Services du projet courant.
+4. Cliquez sur un Service pour voir ses détails : Endpoints, labels, YAML, événements.
 
-##### Cas d'usage
-- **Simplicité** : Utilisé lorsqu'il est suffisant de sécuriser le trafic entre le client et le cluster, sans nécessiter un chiffrement interne.
-- **Performances** : Offre une bonne performance en évitant le chiffrement supplémentaire à l'intérieur du cluster.
+### Informations disponibles
 
-##### Exemple de configuration
+Depuis la vue détaillée d'un Service, vous pouvez consulter :
+
+- La **ClusterIP** attribuée et les ports exposés.
+- La liste des **Endpoints** (pods sains actuellement ciblés).
+- Le **Selector** utilisé pour sélectionner les pods.
+- Le YAML complet pour modification directe.
+
+---
+
+## 4. Les Routes dans OpenShift
+
+### 4.1 Routes vs Ingress Kubernetes : quelle différence ?
+
+OpenShift propose deux mécanismes pour exposer des services HTTP/HTTPS vers l'extérieur du cluster :
+
+| Critère | Route OpenShift | Ingress Kubernetes |
+|---|---|---|
+| Origine | Spécifique à OpenShift | Standard Kubernetes |
+| API | `route.openshift.io/v1` | `networking.k8s.io/v1` |
+| Portabilité | OpenShift uniquement | Tous clusters Kubernetes |
+| TLS termination | 3 modes natifs (edge, reencrypt, passthrough) | Dépend du contrôleur |
+| Annotations | Riches (timeout, rate limiting, etc.) | Dépend du contrôleur |
+| Wildcard | Supporté nativement | Partiel |
+| Recommandé pour | Déploiements OpenShift standard | Portabilité multi-cluster |
+
+:::info Ingress et Routes dans OpenShift
+OpenShift traduit automatiquement les objets `Ingress` Kubernetes en objets `Route`. Vous pouvez donc utiliser les deux syntaxes. Cependant, pour tirer parti des fonctionnalités avancées d'OpenShift (TLS passthrough, annotations de routage), les Routes sont préférées.
+:::
+
+### 4.2 L'Ingress Controller (HAProxy Router)
+
+L'**Ingress Controller** d'OpenShift est un pod HAProxy déployé dans le namespace `openshift-ingress`. Il :
+
+1. Surveille en permanence les objets Route et Ingress via l'API Kubernetes.
+2. Génère dynamiquement la configuration HAProxy correspondante.
+3. Reçoit les connexions HTTPS/HTTP entrantes sur les ports 443 et 80.
+4. Route le trafic vers le Service approprié selon le `Host` HTTP.
+
+```bash
+# Voir les pods de l'Ingress Controller
+oc get pods -n openshift-ingress
+
+# Voir la configuration de l'IngressController
+oc get ingresscontroller default -n openshift-ingress-operator -o yaml
+```
+
+### 4.3 Structure d'une Route simple (HTTP)
 
 ```yaml
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  name: my-edge-route
+  name: webapp-route
+  namespace: production
 spec:
-  host: example.com
+  host: webapp.apps.cluster.example.com   # Nom de domaine (optionnel, auto-généré sinon)
   to:
     kind: Service
-    name: my-service
+    name: webapp-service                   # Service cible
+    weight: 100
+  port:
+    targetPort: http                       # Port nommé du Service (ou numéro de port)
+  wildcardPolicy: None
+```
+
+```bash
+# Créer la route
+oc apply -f webapp-route.yaml
+
+# Voir l'URL assignée
+oc get route webapp-route -n production
+# NAME           HOST/PORT                                  PATH   SERVICES         PORT   TERMINATION   WILDCARD
+# webapp-route   webapp.apps.cluster.example.com                  webapp-service   http   <none>        None
+```
+
+---
+
+## 5. Modes de terminaison TLS
+
+Lorsqu'une application doit être exposée en HTTPS, OpenShift propose trois modes de terminaison TLS, chacun répondant à des besoins de sécurité différents.
+
+![Modes de terminaison TLS dans OpenShift](./images/tls-termination.svg)
+
+*Les trois modes de terminaison TLS : Edge, Re-encrypt, et Passthrough*
+
+![Schéma de flux TLS d'une Route](./images/tls-route.svg)
+
+*Flux de données chiffré entre le client, l'Ingress Controller, et les pods selon le mode TLS*
+
+### Tableau comparatif des modes TLS
+
+| Mode | TLS client→Ingress | TLS Ingress→Pod | Certificat pod requis | Niveau de sécurité |
+|---|---|---|---|---|
+| **Edge** | Oui (HTTPS) | Non (HTTP en clair) | Non | Standard |
+| **Re-encrypt** | Oui (HTTPS) | Oui (HTTPS) | Oui | Elevé |
+| **Passthrough** | Oui (HTTPS) | Oui (HTTPS, non déchiffré) | Oui | Maximum |
+
+---
+
+### 5.1 Edge Termination
+
+#### Principe
+
+Dans le mode **Edge**, l'Ingress Controller **termine la connexion TLS** : il déchiffre le trafic HTTPS entrant, puis le retransmet **en HTTP clair** vers les pods. Le certificat TLS est géré par l'Ingress Controller.
+
+```
+Client --[HTTPS]--> Ingress Controller --[HTTP]--> Pod
+                   (déchiffrement ici)
+```
+
+#### Cas d'usage
+
+- Applications web classiques où le trafic interne au cluster est considéré comme de confiance.
+- Simplification : aucun certificat à configurer côté application.
+- Bonne performance (déchiffrement centralisé, une seule fois).
+
+#### Exemple de configuration
+
+```yaml
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: webapp-edge
+  namespace: production
+spec:
+  host: webapp.apps.cluster.example.com
+  to:
+    kind: Service
+    name: webapp-service
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect  # Redirige HTTP vers HTTPS
+    # Certificat personnalisé (optionnel, sinon certificat wildcard du cluster)
+    certificate: |
+      -----BEGIN CERTIFICATE-----
+      MIIDazCCAlOgAwIBAgIU...
+      -----END CERTIFICATE-----
+    key: |
+      -----BEGIN RSA PRIVATE KEY-----
+      MIIEowIBAAKCAQEA...
+      -----END RSA PRIVATE KEY-----
+```
+
+:::tip Redirection HTTP → HTTPS
+Ajoutez toujours `insecureEdgeTerminationPolicy: Redirect` pour que les requêtes HTTP soient automatiquement redirigées en HTTPS. La valeur `None` laisse le HTTP fonctionner (non recommandé), et `Allow` l'accepte explicitement.
+:::
+
+---
+
+### 5.2 Re-encrypt Termination
+
+#### Principe
+
+Dans le mode **Re-encrypt**, l'Ingress Controller termine la connexion TLS entrante, puis établit une **nouvelle connexion TLS chiffrée** vers les pods. Le trafic est donc chiffré sur l'ensemble du parcours, y compris à l'intérieur du cluster.
+
+```
+Client --[HTTPS]--> Ingress Controller --[HTTPS]--> Pod
+                   (déchiffrement + rechiffrement)
+```
+
+#### Cas d'usage
+
+- Environnements à conformité stricte (PCI-DSS, HIPAA, HDS) exigeant le chiffrement de bout en bout.
+- Microservices exposant leurs propres certificats (mTLS).
+- Lorsque le réseau interne du cluster n'est pas considéré comme de confiance.
+
+#### Exemple de configuration
+
+```yaml
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: api-reencrypt
+  namespace: production
+spec:
+  host: api.apps.cluster.example.com
+  to:
+    kind: Service
+    name: api-service
+  port:
+    targetPort: 8443
+  tls:
+    termination: reencrypt
+    insecureEdgeTerminationPolicy: Redirect
+    # CA certificate du backend (pour valider le certificat du pod)
+    destinationCACertificate: |
+      -----BEGIN CERTIFICATE-----
+      MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...
+      -----END CERTIFICATE-----
+```
+
+:::warning Certificat côté pod obligatoire
+En mode Re-encrypt, le pod doit exposer une connexion HTTPS (port 8443 en général) avec un certificat valide. L'Ingress Controller vérifie ce certificat contre le `destinationCACertificate` fourni dans la Route. Sans cette CA, la connexion sera refusée.
+:::
+
+---
+
+### 5.3 Passthrough Termination
+
+#### Principe
+
+Dans le mode **Passthrough**, l'Ingress Controller **ne déchiffre pas** le trafic TLS. Il transfère les flux TCP bruts directement vers le pod cible. Le pod est entièrement responsable de la gestion du TLS.
+
+```
+Client --[HTTPS]--> Ingress Controller --[HTTPS (opaque)]--> Pod
+                   (aucun déchiffrement)
+```
+
+#### Cas d'usage
+
+- Applications avec **mutual TLS (mTLS)** où les certificats clients doivent être traités par l'application elle-même.
+- Protocoles non-HTTP encapsulés dans TLS (gRPC, MQTT over TLS).
+- Applications gérant leur propre PKI sans vouloir l'exposer au cluster.
+
+#### Exemple de configuration
+
+```yaml
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: grpc-passthrough
+  namespace: production
+spec:
+  host: grpc.apps.cluster.example.com
+  to:
+    kind: Service
+    name: grpc-service
+  port:
+    targetPort: 8443
+  tls:
+    termination: passthrough
+  wildcardPolicy: None
+```
+
+:::info Passthrough et inspection
+En mode Passthrough, l'Ingress Controller ne peut pas inspecter les en-têtes HTTP, appliquer des règles de routage basées sur le chemin (path-based routing), ni modifier les en-têtes. Il ne peut router que sur le nom d'hôte (SNI TLS).
+:::
+
+---
+
+## 6. Fonctionnalités avancées des Routes
+
+### 6.1 Routage basé sur le chemin (Path-based routing)
+
+Plusieurs Routes peuvent partager le même domaine mais router vers des services différents selon le chemin :
+
+```yaml
+# Route pour /api
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: api-route
+  namespace: production
+spec:
+  host: app.example.com
+  path: /api
+  to:
+    kind: Service
+    name: api-service
+  tls:
+    termination: edge
+---
+# Route pour /
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: frontend-route
+  namespace: production
+spec:
+  host: app.example.com
+  path: /
+  to:
+    kind: Service
+    name: frontend-service
   tls:
     termination: edge
 ```
 
-#### 2. **Re-encrypt Termination (Mode Reencrypt)**
+### 6.2 Annotations utiles
 
-##### Description
-Dans le mode **Re-encrypt Termination**, la terminaison TLS est effectuée par l'Ingress Controller, mais le trafic est ensuite ré-encrypté et acheminé vers les pods cibles en TLS. Cela assure que le trafic reste chiffré tout au long de son parcours, du client jusqu'aux pods.
+```yaml
+metadata:
+  annotations:
+    # Timeout de connexion au backend (défaut : 30s)
+    haproxy.router.openshift.io/timeout: 60s
+    # Activer les sessions collantes (sticky sessions)
+    haproxy.router.openshift.io/balance: source
+    # Taille maximale du body (upload)
+    haproxy.router.openshift.io/proxy-body-size: 100m
+    # Forcer HSTS
+    haproxy.router.openshift.io/hsts_header: "max-age=31536000;includeSubDomains;preload"
+```
 
-##### Cas d'usage
-- **Sécurité accrue** : Utilisé lorsqu'il est nécessaire de sécuriser le trafic non seulement entre le client et le cluster, mais aussi à l'intérieur du cluster.
-- **Conformité** : Idéal pour les environnements nécessitant une conformité stricte en matière de sécurité des données.
-
-##### Exemple de configuration
+### 6.3 Partage de charge entre deux services (A/B testing)
 
 ```yaml
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  name: my-reencrypt-route
+  name: ab-test-route
+  namespace: production
 spec:
-  host: example.com
+  host: webapp.apps.cluster.example.com
   to:
     kind: Service
-    name: my-service
+    name: webapp-v1
+    weight: 80        # 80% du trafic vers v1
+  alternateBackends:
+    - kind: Service
+      name: webapp-v2
+      weight: 20      # 20% du trafic vers v2
   tls:
-    termination: reencrypt
-    destinationCACertificate: |
-      -----BEGIN CERTIFICATE-----
-      MIIBIjANBgkqh...
-      -----END CERTIFICATE-----
+    termination: edge
 ```
 
-#### 3. **Passthrough Termination (Mode Passthrough)**
+---
 
-##### Description
-Dans le mode **Passthrough Termination**, l'Ingress Controller ne termine pas la connexion TLS. Au lieu de cela, il passe directement le trafic TLS au service backend sans modification. Le service backend doit être configuré pour gérer le chiffrement TLS.
+## 7. Gestion des Services et Routes depuis la CLI
 
-##### Cas d'usage
-- **Applications sensibles** : Utilisé pour des applications qui nécessitent un contrôle total sur le chiffrement TLS, ou lorsqu'une application gère déjà son propre chiffrement.
-- **Performances** : Évite la surcharge du chiffrement/déchiffrement dans l'Ingress Controller, mais nécessite que le backend soit capable de gérer les connexions TLS.
+### Commandes Services
 
-##### Exemple de configuration
+```bash
+# Créer un service à partir d'un déploiement existant
+oc expose deployment webapp --port=80 --target-port=8080
 
-```yaml
-apiVersion: route.openshift.io/v1
-kind: Route
-metadata:
-  name: my-passthrough-route
-spec:
-  host: example.com
-  to:
-    kind:
+# Lister les services d'un namespace
+oc get services -n production
 
- Service
-    name: my-service
-  tls:
-    termination: passthrough
+# Détail complet d'un service
+oc describe service backend-api -n production
+
+# Voir les endpoints (pods ciblés)
+oc get endpoints backend-api -n production
+
+# Supprimer un service
+oc delete service backend-api -n production
 ```
 
-![tls route](./images/tls-route.svg)
+### Commandes Routes
 
-## Conclusion
+```bash
+# Créer une route depuis un service (HTTP simple)
+oc expose service webapp-service --hostname=webapp.apps.cluster.example.com
 
-Les services et les routes sont des composantes essentielles pour gérer le trafic réseau dans OpenShift. Les services permettent de regrouper et d'exposer des pods à l'intérieur du cluster, tandis que les routes facilitent l'accès externe. En comprenant les différents types de services et les modes d'exposition TLS, vous pouvez configurer des applications sécurisées et hautement disponibles, adaptées à divers environnements et besoins.
+# Créer une route TLS edge
+oc create route edge webapp-https \
+  --service=webapp-service \
+  --hostname=webapp.apps.cluster.example.com \
+  --insecure-policy=Redirect
+
+# Lister les routes
+oc get routes -n production
+
+# Voir l'URL d'une route
+oc get route webapp-https -n production -o jsonpath='{.spec.host}'
+
+# Tester la route depuis la CLI
+curl -v https://webapp.apps.cluster.example.com/health
+```
+
+:::tip Créer une route TLS avec un certificat personnalisé
+```bash
+oc create route edge webapp-custom-tls \
+  --service=webapp-service \
+  --hostname=webapp.example.com \
+  --cert=tls.crt \
+  --key=tls.key \
+  --ca-cert=ca.crt \
+  --insecure-policy=Redirect
+```
+:::
+
+---
+
+## Résumé
+
+| Concept | Points clés à retenir |
+|---|---|
+| **Service ClusterIP** | Accès interne uniquement, DNS stable, load balancing entre pods |
+| **Service NodePort** | Accès externe via port haut (30000-32767), adapté aux tests |
+| **Service LoadBalancer** | IP publique dédiée, adapté au cloud ou MetalLB on-premise |
+| **Route HTTP** | Exposition externe HTTP simple, nom de domaine automatique |
+| **Route TLS Edge** | HTTPS terminé par l'Ingress, pod reçoit HTTP — cas le plus courant |
+| **Route TLS Re-encrypt** | Chiffrement bout en bout, conformité réglementaire |
+| **Route TLS Passthrough** | Chiffrement géré par le pod, mTLS, protocoles non-HTTP |
+
+:::info Prochaine étape
+La section suivante traite de la **sécurisation des accès** dans OpenShift : RBAC, SCC (Security Context Constraints), et les bonnes pratiques pour durcir vos déploiements.
+:::

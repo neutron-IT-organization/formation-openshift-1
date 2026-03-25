@@ -1,0 +1,146 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 480" width="1000" height="480">
+  <!-- Background -->
+  <rect width="1000" height="480" fill="#1b1d21"/>
+
+  <!-- Top navigation bar -->
+  <rect width="1000" height="48" fill="#0f1014"/>
+  <rect width="1000" height="3" y="48" fill="#ff0454"/>
+
+  <!-- Red Hat OpenShift logo area -->
+  <rect x="16" y="12" width="28" height="24" rx="2" fill="#ff0454"/>
+  <text x="20" y="29" font-family="monospace" font-size="14" font-weight="bold" fill="white">OS</text>
+  <text x="52" y="30" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="white">Red Hat OpenShift</text>
+
+  <!-- Nav items -->
+  <text x="620" y="30" font-family="Arial, sans-serif" font-size="12" fill="#a0a0a8">Cluster: ocp-training</text>
+  <circle cx="880" cy="24" r="14" fill="#303030"/>
+  <text x="875" y="29" font-family="Arial, sans-serif" font-size="11" fill="#c0c0c8">dev</text>
+  <text x="910" y="30" font-family="Arial, sans-serif" font-size="12" fill="#a0a0a8">?</text>
+  <text x="940" y="30" font-family="Arial, sans-serif" font-size="12" fill="#a0a0a8">admin</text>
+
+  <!-- Left sidebar -->
+  <rect x="0" y="51" width="220" height="429" fill="#16181d"/>
+
+  <!-- Sidebar nav sections -->
+  <!-- Home -->
+  <rect x="0" y="60" width="220" height="32" fill="transparent"/>
+  <text x="20" y="81" font-family="Arial, sans-serif" font-size="12" fill="#707080">Accueil</text>
+
+  <!-- Perspective label -->
+  <text x="20" y="115" font-family="Arial, sans-serif" font-size="10" fill="#606070" font-weight="bold">DEVELOPER</text>
+
+  <!-- Topology -->
+  <rect x="0" y="122" width="220" height="30" fill="transparent"/>
+  <text x="20" y="142" font-family="Arial, sans-serif" font-size="12" fill="#9090a0">Topologie</text>
+
+  <!-- Workloads section header -->
+  <rect x="0" y="162" width="220" height="30" fill="transparent"/>
+  <text x="20" y="182" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#c0c0cc">Workloads</text>
+
+  <!-- Pods -->
+  <rect x="0" y="193" width="220" height="28" fill="transparent"/>
+  <text x="36" y="212" font-family="Arial, sans-serif" font-size="12" fill="#9090a0">Pods</text>
+
+  <!-- Deployments -->
+  <rect x="0" y="221" width="220" height="28" fill="transparent"/>
+  <text x="36" y="240" font-family="Arial, sans-serif" font-size="12" fill="#9090a0">Deployments</text>
+
+  <!-- ConfigMaps - highlighted -->
+  <rect x="0" y="249" width="220" height="30" rx="0" fill="#202cac"/>
+  <rect x="0" y="249" width="4" height="30" fill="#ff0454"/>
+  <text x="36" y="269" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">ConfigMaps</text>
+
+  <!-- Secrets -->
+  <rect x="0" y="280" width="220" height="28" fill="transparent"/>
+  <text x="36" y="299" font-family="Arial, sans-serif" font-size="12" fill="#9090a0">Secrets</text>
+
+  <!-- Networking section -->
+  <rect x="0" y="318" width="220" height="30" fill="transparent"/>
+  <text x="20" y="338" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#c0c0cc">Networking</text>
+
+  <text x="36" y="366" font-family="Arial, sans-serif" font-size="12" fill="#9090a0">Services</text>
+  <text x="36" y="394" font-family="Arial, sans-serif" font-size="12" fill="#9090a0">Routes</text>
+
+  <!-- Storage section -->
+  <text x="20" y="428" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#c0c0cc">Storage</text>
+  <text x="36" y="455" font-family="Arial, sans-serif" font-size="12" fill="#9090a0">PersistentVolumeClaims</text>
+
+  <!-- Main content area -->
+  <rect x="220" y="51" width="780" height="429" fill="#1b1d21"/>
+
+  <!-- Breadcrumb -->
+  <text x="240" y="80" font-family="Arial, sans-serif" font-size="12" fill="#6070a0">Workloads</text>
+  <text x="308" y="80" font-family="Arial, sans-serif" font-size="12" fill="#6070a0"> / </text>
+  <text x="320" y="80" font-family="Arial, sans-serif" font-size="12" fill="#6070a0">ConfigMaps</text>
+  <text x="400" y="80" font-family="Arial, sans-serif" font-size="12" fill="#6070a0"> / </text>
+  <text x="412" y="80" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#c0c0d0">app-config</text>
+
+  <!-- Page title -->
+  <text x="240" y="112" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="white">app-config</text>
+  <rect x="330" y="97" width="72" height="20" rx="10" fill="#202cac"/>
+  <text x="338" y="111" font-family="Arial, sans-serif" font-size="11" fill="#8ab0ff">ConfigMap</text>
+
+  <!-- Tabs -->
+  <rect x="240" y="128" width="780" height="2" fill="#303040"/>
+  <!-- Details tab active -->
+  <rect x="240" y="120" width="68" height="30" fill="transparent"/>
+  <text x="252" y="140" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="white">Details</text>
+  <rect x="240" y="148" width="68" height="2" fill="#ff0454"/>
+  <!-- YAML tab -->
+  <rect x="318" y="120" width="52" height="30" fill="transparent"/>
+  <text x="328" y="140" font-family="Arial, sans-serif" font-size="13" fill="#8090b0">YAML</text>
+
+  <!-- Detail section: Metadata -->
+  <text x="240" y="178" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#c0c8e0">ConfigMap details</text>
+  <rect x="240" y="186" width="460" height="1" fill="#303040"/>
+
+  <!-- Label: Name -->
+  <text x="240" y="210" font-family="Arial, sans-serif" font-size="12" fill="#8090b0">Name</text>
+  <text x="380" y="210" font-family="Arial, sans-serif" font-size="12" fill="#d0d8f0">app-config</text>
+
+  <!-- Label: Namespace -->
+  <text x="240" y="234" font-family="Arial, sans-serif" font-size="12" fill="#8090b0">Namespace</text>
+  <text x="380" y="234" font-family="Arial, sans-serif" font-size="12" fill="#7090e0">formation</text>
+
+  <!-- Label: Created -->
+  <text x="240" y="258" font-family="Arial, sans-serif" font-size="12" fill="#8090b0">Created</text>
+  <text x="380" y="258" font-family="Arial, sans-serif" font-size="12" fill="#d0d8f0">2 hours ago</text>
+
+  <!-- Data section header -->
+  <text x="240" y="296" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#c0c8e0">Data</text>
+  <rect x="240" y="304" width="700" height="1" fill="#303040"/>
+
+  <!-- Data key-value: WELCOME_MESSAGE -->
+  <rect x="240" y="314" width="700" height="44" rx="4" fill="#13151a"/>
+  <rect x="240" y="314" width="4" height="44" rx="2" fill="#202cac"/>
+  <text x="256" y="332" font-family="monospace" font-size="11" font-weight="bold" fill="#8ab0ff">WELCOME_MESSAGE</text>
+  <text x="256" y="350" font-family="monospace" font-size="12" fill="#a0e0a0">Bonjour</text>
+
+  <!-- Data key-value: APP_MODE -->
+  <rect x="240" y="366" width="700" height="44" rx="4" fill="#13151a"/>
+  <rect x="240" y="366" width="4" height="44" rx="2" fill="#202cac"/>
+  <text x="256" y="384" font-family="monospace" font-size="11" font-weight="bold" fill="#8ab0ff">APP_MODE</text>
+  <text x="256" y="402" font-family="monospace" font-size="12" fill="#a0e0a0">production</text>
+
+  <!-- YAML preview panel on the right -->
+  <rect x="720" y="160" width="260" height="260" rx="6" fill="#0d0f14"/>
+  <rect x="720" y="160" width="260" height="28" rx="6" fill="#16181f"/>
+  <text x="738" y="179" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#8090b0">YAML Preview</text>
+
+  <text x="736" y="208" font-family="monospace" font-size="10" fill="#606880">apiVersion: v1</text>
+  <text x="736" y="222" font-family="monospace" font-size="10" fill="#606880">kind: ConfigMap</text>
+  <text x="736" y="236" font-family="monospace" font-size="10" fill="#606880">metadata:</text>
+  <text x="736" y="250" font-family="monospace" font-size="10" fill="#606880">  name: app-config</text>
+  <text x="736" y="264" font-family="monospace" font-size="10" fill="#606880">  namespace: formation</text>
+  <text x="736" y="278" font-family="monospace" font-size="10" fill="#8ab0ff">data:</text>
+  <text x="736" y="292" font-family="monospace" font-size="10" fill="#a0d0a0">  WELCOME_MESSAGE:</text>
+  <text x="736" y="306" font-family="monospace" font-size="10" fill="#e0e080">    Bonjour</text>
+  <text x="736" y="320" font-family="monospace" font-size="10" fill="#a0d0a0">  APP_MODE:</text>
+  <text x="736" y="334" font-family="monospace" font-size="10" fill="#e0e080">    production</text>
+
+  <!-- Action buttons -->
+  <rect x="820" y="100" width="80" height="28" rx="4" fill="#202cac"/>
+  <text x="835" y="119" font-family="Arial, sans-serif" font-size="12" fill="white">Modifier</text>
+  <rect x="910" y="100" width="80" height="28" rx="4" fill="#2a0a14" stroke="#ff0454" stroke-width="1"/>
+  <text x="921" y="119" font-family="Arial, sans-serif" font-size="12" fill="#ff0454">Supprimer</text>
+</svg>

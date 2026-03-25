@@ -15,9 +15,9 @@
   <line x1="400" y1="55" x2="400" y2="385" stroke="#DDD" stroke-width="1.5" stroke-dasharray="6,4"/>
 
   <!-- Developer Perspective -->
-  <rect x="30" y="55" width="340" height="330" rx="10" fill="white" stroke="#326CE5" stroke-width="2" filter="url(#shadow)"/>
-  <rect x="30" y="55" width="340" height="40" rx="10" fill="#326CE5"/>
-  <rect x="30" y="85" width="340" height="10" fill="#326CE5"/>
+  <rect x="30" y="55" width="340" height="330" rx="10" fill="white" stroke="#202cac" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="30" y="55" width="340" height="40" rx="10" fill="#202cac"/>
+  <rect x="30" y="85" width="340" height="10" fill="#202cac"/>
   <text x="200" y="82" text-anchor="middle" font-size="16" font-weight="bold" fill="white">Developer</text>
 
   <!-- Developer icon -->
@@ -27,41 +27,41 @@
 
   <!-- Developer items -->
   <g transform="translate(60, 115)">
-    <rect width="280" height="45" rx="6" fill="#E3F2FD" stroke="#326CE5" stroke-width="1"/>
-    <circle cx="25" cy="22" r="14" fill="#326CE5"/>
+    <rect width="280" height="45" rx="6" fill="#e8eaf6" stroke="#202cac" stroke-width="1"/>
+    <circle cx="25" cy="22" r="14" fill="#202cac"/>
     <text x="25" y="27" text-anchor="middle" font-size="14" fill="white">T</text>
     <text x="55" y="27" font-size="15" fill="#333">Topology</text>
     <text x="270" y="27" text-anchor="end" font-size="11" fill="#666">Vue graphique des apps</text>
   </g>
 
   <g transform="translate(60, 170)">
-    <rect width="280" height="45" rx="6" fill="#E3F2FD" stroke="#326CE5" stroke-width="1"/>
-    <circle cx="25" cy="22" r="14" fill="#326CE5"/>
+    <rect width="280" height="45" rx="6" fill="#e8eaf6" stroke="#202cac" stroke-width="1"/>
+    <circle cx="25" cy="22" r="14" fill="#202cac"/>
     <text x="25" y="27" text-anchor="middle" font-size="18" fill="white">+</text>
     <text x="55" y="27" font-size="15" fill="#333">+Add</text>
     <text x="270" y="27" text-anchor="end" font-size="11" fill="#666">Ajouter des ressources</text>
   </g>
 
   <g transform="translate(60, 225)">
-    <rect width="280" height="45" rx="6" fill="#E3F2FD" stroke="#326CE5" stroke-width="1"/>
-    <circle cx="25" cy="22" r="14" fill="#326CE5"/>
+    <rect width="280" height="45" rx="6" fill="#e8eaf6" stroke="#202cac" stroke-width="1"/>
+    <circle cx="25" cy="22" r="14" fill="#202cac"/>
     <text x="25" y="27" text-anchor="middle" font-size="14" fill="white">B</text>
     <text x="55" y="27" font-size="15" fill="#333">Builds</text>
     <text x="270" y="27" text-anchor="end" font-size="11" fill="#666">Constructions d'images</text>
   </g>
 
   <g transform="translate(60, 280)">
-    <rect width="280" height="45" rx="6" fill="#E3F2FD" stroke="#326CE5" stroke-width="1"/>
-    <circle cx="25" cy="22" r="14" fill="#326CE5"/>
+    <rect width="280" height="45" rx="6" fill="#e8eaf6" stroke="#202cac" stroke-width="1"/>
+    <circle cx="25" cy="22" r="14" fill="#202cac"/>
     <text x="25" y="27" text-anchor="middle" font-size="14" fill="white">P</text>
     <text x="55" y="27" font-size="15" fill="#333">Pipelines</text>
     <text x="270" y="27" text-anchor="end" font-size="11" fill="#666">CI/CD Tekton</text>
   </g>
 
   <!-- Administrator Perspective -->
-  <rect x="430" y="55" width="340" height="330" rx="10" fill="white" stroke="#EE0000" stroke-width="2" filter="url(#shadow)"/>
-  <rect x="430" y="55" width="340" height="40" rx="10" fill="#EE0000"/>
-  <rect x="430" y="85" width="340" height="10" fill="#EE0000"/>
+  <rect x="430" y="55" width="340" height="330" rx="10" fill="white" stroke="#ff0454" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="430" y="55" width="340" height="40" rx="10" fill="#ff0454"/>
+  <rect x="430" y="85" width="340" height="10" fill="#ff0454"/>
   <text x="600" y="82" text-anchor="middle" font-size="16" font-weight="bold" fill="white">Administrator</text>
 
   <!-- Admin icon -->
@@ -70,32 +70,32 @@
 
   <!-- Admin items -->
   <g transform="translate(460, 115)">
-    <rect width="280" height="45" rx="6" fill="#FFEBEE" stroke="#EE0000" stroke-width="1"/>
-    <circle cx="25" cy="22" r="14" fill="#EE0000"/>
+    <rect width="280" height="45" rx="6" fill="#ffe0e8" stroke="#ff0454" stroke-width="1"/>
+    <circle cx="25" cy="22" r="14" fill="#ff0454"/>
     <text x="25" y="27" text-anchor="middle" font-size="14" fill="white">H</text>
     <text x="55" y="27" font-size="15" fill="#333">Home</text>
     <text x="270" y="27" text-anchor="end" font-size="11" fill="#666">Dashboard, projets</text>
   </g>
 
   <g transform="translate(460, 170)">
-    <rect width="280" height="45" rx="6" fill="#FFEBEE" stroke="#EE0000" stroke-width="1"/>
-    <circle cx="25" cy="22" r="14" fill="#EE0000"/>
+    <rect width="280" height="45" rx="6" fill="#ffe0e8" stroke="#ff0454" stroke-width="1"/>
+    <circle cx="25" cy="22" r="14" fill="#ff0454"/>
     <text x="25" y="27" text-anchor="middle" font-size="14" fill="white">W</text>
     <text x="55" y="27" font-size="15" fill="#333">Workloads</text>
     <text x="270" y="27" text-anchor="end" font-size="11" fill="#666">Pods, Deployments</text>
   </g>
 
   <g transform="translate(460, 225)">
-    <rect width="280" height="45" rx="6" fill="#FFEBEE" stroke="#EE0000" stroke-width="1"/>
-    <circle cx="25" cy="22" r="14" fill="#EE0000"/>
+    <rect width="280" height="45" rx="6" fill="#ffe0e8" stroke="#ff0454" stroke-width="1"/>
+    <circle cx="25" cy="22" r="14" fill="#ff0454"/>
     <text x="25" y="27" text-anchor="middle" font-size="14" fill="white">N</text>
     <text x="55" y="27" font-size="15" fill="#333">Networking</text>
     <text x="270" y="27" text-anchor="end" font-size="11" fill="#666">Services, Routes</text>
   </g>
 
   <g transform="translate(460, 280)">
-    <rect width="280" height="45" rx="6" fill="#FFEBEE" stroke="#EE0000" stroke-width="1"/>
-    <circle cx="25" cy="22" r="14" fill="#EE0000"/>
+    <rect width="280" height="45" rx="6" fill="#ffe0e8" stroke="#ff0454" stroke-width="1"/>
+    <circle cx="25" cy="22" r="14" fill="#ff0454"/>
     <text x="25" y="27" text-anchor="middle" font-size="14" fill="white">S</text>
     <text x="55" y="27" font-size="15" fill="#333">Storage</text>
     <text x="270" y="27" text-anchor="end" font-size="11" fill="#666">PV, PVC</text>

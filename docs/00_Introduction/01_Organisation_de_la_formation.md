@@ -1,45 +1,136 @@
-# Organisation de la Formation
+# Organisation de la formation
 
-Pour faciliter l'apprentissage et les exercices pratiques, un cluster OpenShift a déjà été déployé au préalable. Cette préparation permet de maximiser le temps dédié à l'acquisition de compétences et à la mise en pratique des concepts théoriques.
+## Environnement technique
 
- Chaque utilisateur dispose sur sa table d'un nom de ville. Cette ville correspond au namespace auquel il aura accès, avec un namespace attribué.
+Pour maximiser le temps consacré à l'apprentissage, un cluster OpenShift a été provisionné et configuré en amont. Vous n'avez aucune installation à réaliser : dès le début de la formation, l'environnement est opérationnel et accessible.
 
-La liste des villes est la suivante:
+:::info Infrastructure partagée
+Le cluster est un environnement partagé entre tous les participants. Chaque participant dispose d'un namespace isolé pour ses exercices. Les actions réalisées dans votre namespace n'affectent pas les autres participants.
+:::
 
-```shell
-Tokyo, Paris, Londres, Rome, Sydney, Rio, Istanbul, Berlin, Nairobi, Madrid, Toronto, Singapour, Stockholm, Athènes, Varsovie, Oslo, Helsinki, Lisbonne, Vienne, Brasilia, Canberra, Ottawa, Séoul, Le Cap, Budapest, Dublin, Zurich, Cardiff, Nicosie, Sofia, Suva, Riga, Vilnius, Alger, Abou Dabi, Bagdad, Bangkok, Le Caire, Freetown, Kaboul, Kinshasa, Libreville, Mexico, Reykjavik, Prague.
+### Attribution des namespaces
+
+Chaque participant se voit attribuer un namespace identifié par un nom de ville. Ce nom est indiqué sur votre poste de travail.
+
+La liste complète des villes disponibles est la suivante :
+
+```
+Tokyo, Paris, Londres, Rome, Sydney, Rio, Istanbul, Berlin, Nairobi, Madrid,
+Toronto, Singapour, Stockholm, Athènes, Varsovie, Oslo, Helsinki, Lisbonne,
+Vienne, Brasilia, Canberra, Ottawa, Séoul, Le Cap, Budapest, Dublin, Zurich,
+Cardiff, Nicosie, Sofia, Suva, Riga, Vilnius, Alger, Abou Dabi, Bagdad,
+Bangkok, Le Caire, Freetown, Kaboul, Kinshasa, Libreville, Mexico, Reykjavik, Prague
 ```
 
-Chaque utilisateur aura des droits d'administrateur sur son propre namespace, ce qui lui permettra de gérer les ressources et les configurations au sein de cet espace. En plus de cela, les utilisateurs auront la possibilité de créer de nouveaux namespaces sur le cluster selon leurs besoins spécifiques. Des limites de resources ont également été appliqués sur l'ensemble des namespaces.
+### Droits et permissions
 
-Si des droits supplémentaires sont requis pour des actions spécifiques ou des configurations plus avancées, ces actions seront effectuées par le formateur, assurant ainsi la sécurité et la bonne gestion des ressources du cluster.
+| Périmètre | Droits accordés |
+|-----------|----------------|
+| Votre namespace (ex: `paris`) | Droits d'administrateur complets |
+| Nouveaux namespaces | Création autorisée selon les besoins |
+| Ressources cluster (nœuds, opérateurs globaux) | Accès en lecture seule |
+| Actions nécessitant des droits cluster-admin | Réalisées par le formateur |
 
-#### Accès au cluster OpenShift
+:::warning Limites de ressources
+Des quotas de ressources ont été appliqués sur l'ensemble des namespaces afin de préserver la stabilité du cluster partagé. Si vous atteignez une limite, le formateur peut ajuster les quotas à la demande.
+:::
 
-Pour accéder au cluster, les participants utiliseront l'URL suivante :
+## Accès au cluster
 
-[https://console-openshift-console.apps.neutron-sno-office.intraneutron.fr/dashboards](https://console-openshift-console.apps.neutron-sno-office.intraneutron.fr/dashboards).
+### Console web
 
-Le nom d'utilisateur sera basé sur le nom de la ville du participant. Par exemple, pour un participant ayant la ville Paris, le nom d'utilisateur sera `paris-user`. Un mot de passe spécifique sera fourni par le formateur pour garantir la sécurité de chaque compte.
+La console web OpenShift est accessible à l'adresse suivante :
 
-![prague user](./images/prague-user.png)
+**[https://console-openshift-console.apps.neutron-sno-office.intraneutron.fr/dashboards](https://console-openshift-console.apps.neutron-sno-office.intraneutron.fr/dashboards)**
 
-L'API du cluster est accessible à l'adresse suivante :
+### Identifiants de connexion
 
-[https://api.neutron-sno-office.intraneutron.fr:6443](https://api.neutron-sno-office.intraneutron.fr:6443).
+Votre nom d'utilisateur est dérivé du nom de votre ville. Par exemple :
 
-Cette API permettra aux utilisateurs de réaliser diverses opérations sur le cluster.
+| Ville attribuée | Nom d'utilisateur |
+|-----------------|------------------|
+| Paris | `paris-user` |
+| Tokyo | `tokyo-user` |
+| Berlin | `berlin-user` |
 
-#### Déroulement du cours
+Le mot de passe vous sera communiqué par le formateur au début de la session.
 
-Le cours est structuré pour alterner entre des chapitres théoriques et des sessions pratiques. Les chapitres théoriques seront présentés par le formateur à l'aide de slides, fournissant ainsi une base solide de connaissances sur OpenShift et ses différentes fonctionnalités. Ces sessions théoriques seront essentielles pour comprendre les concepts clés et les bonnes pratiques à adopter.
+![Exemple de compte utilisateur](./images/prague-user.png)
 
-Après chaque chapitre théorique, une partie pratique sera organisée. Ces sessions pratiques pourront inclure des quiz à réaliser, permettant ainsi aux participants de tester et de renforcer leurs connaissances de manière collaborative ou des manipulations pratiques qui seront effectuées directement dans les namespaces attribués.
+:::tip Fournisseur d'identité
+Sur la page de connexion, sélectionnez le fournisseur **"Neutron Guest Identity Management"** pour vous authentifier avec les identifiants fournis.
+:::
 
-Pour les manipulations pratiques, deux options sont possibles. Les participants pourront utiliser leur propre terminal pour interagir avec le cluster. Alternativement, ils pourront utiliser le terminal Operator, un outil intégré à OpenShift qui facilite la gestion et l'interaction avec les ressources du cluster.
+### API du cluster
 
-Ces sessions pratiques sont conçues pour offrir une expérience d'apprentissage immersive et interactive, permettant aux participants de mettre en application les concepts théoriques dans des scénarios réels. Le formateur sera présent pour guider les participants, répondre à leurs questions et fournir des clarifications au besoin.
+Pour les interactions via la ligne de commande avec `oc`, l'API du cluster est disponible à l'adresse suivante :
 
-Enfin n'hésitez pas à nous poser des questions !
+**[https://api.neutron-sno-office.intraneutron.fr:6443](https://api.neutron-sno-office.intraneutron.fr:6443)**
 
-![container stack](./images/chat.png)
+Pour vous connecter depuis un terminal :
+
+```shell
+oc login https://api.neutron-sno-office.intraneutron.fr:6443 \
+  --username paris-user \
+  --password <votre-mot-de-passe>
+```
+
+Une fois connecté, vérifiez que vous êtes positionné sur le bon projet :
+
+```shell
+oc project paris
+```
+
+## Déroulement de la formation
+
+### Programme des deux jours
+
+| Période | Contenu |
+|---------|---------|
+| **Jour 1 — Matin** | Introduction, présentation d'OpenShift, architecture, exploration de la console |
+| **Jour 1 — Après-midi** | Déploiement d'applications, gestion des pods, services et routes |
+| **Jour 2 — Matin** | Configuration, secrets, stockage persistant |
+| **Jour 2 — Après-midi** | Disponibilité, autoscaling, mises à jour, bilan et Q&A |
+
+### Schéma pédagogique
+
+Chaque module de la formation suit le même enchaînement :
+
+```
+1. Théorie       — Présentation par le formateur (slides + explications)
+2. Démonstration — Le formateur réalise la manipulation en direct
+3. Exercice      — Vous reproduisez la manipulation dans votre namespace
+4. Quiz          — Questions rapides pour consolider les acquis
+```
+
+:::note Quiz interactifs
+Les quiz sont réalisés avec Quizizz. Ils sont accessibles depuis votre navigateur et permettent de vérifier votre compréhension de manière ludique et collaborative.
+:::
+
+### Outils disponibles pour les exercices
+
+Deux options s'offrent à vous pour réaliser les manipulations pratiques :
+
+| Option | Description | Recommandé si |
+|--------|-------------|---------------|
+| **Terminal local** | Votre propre terminal avec `oc` installé | Vous êtes à l'aise avec les outils locaux |
+| **Terminal web OpenShift** | Terminal intégré directement dans la console OpenShift | Vous souhaitez tout faire depuis le navigateur |
+
+:::tip Terminal web
+Le terminal intégré à OpenShift (accessible via l'icône en haut à droite de la console) est préconfiguré avec `oc` et les droits de votre utilisateur. C'est l'option la plus simple si vous ne souhaitez pas configurer votre environnement local.
+:::
+
+## Règles de bonne conduite
+
+Pour garantir une expérience d'apprentissage optimale pour tous :
+
+- Travaillez exclusivement dans votre namespace attribué
+- Ne supprimez pas les ressources des autres participants
+- Signalez immédiatement tout problème technique au formateur
+- Posez vos questions : les questions profitent à l'ensemble du groupe
+
+:::info Besoin d'aide ?
+Le formateur est disponible tout au long de la formation pour répondre à vos questions, débloquer des situations et apporter des précisions. N'hésitez pas à demander.
+:::
+
+![Posez vos questions](./images/chat.png)

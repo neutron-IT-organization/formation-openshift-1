@@ -11,8 +11,8 @@
   <text x="215" y="75" text-anchor="middle" font-size="13" font-weight="bold" fill="white">deployment.yaml</text>
 
   <!-- apiVersion -->
-  <rect x="45" y="95" width="340" height="28" rx="4" fill="#E3F2FD"/>
-  <text x="55" y="114" font-size="13" font-family="monospace" fill="#326CE5" font-weight="bold">apiVersion:</text>
+  <rect x="45" y="95" width="340" height="28" rx="4" fill="#e8eaf6"/>
+  <text x="55" y="114" font-size="13" font-family="monospace" fill="#202cac" font-weight="bold">apiVersion:</text>
   <text x="175" y="114" font-size="13" font-family="monospace" fill="#555">apps/v1</text>
 
   <!-- kind -->
@@ -35,15 +35,15 @@
   <text x="75" y="322" font-size="12" font-family="monospace" fill="#555">template: ...</text>
 
   <!-- status -->
-  <rect x="45" y="339" width="340" height="35" rx="4" fill="#FFEBEE" stroke="#EE0000" stroke-width="1"/>
-  <text x="55" y="358" font-size="13" font-family="monospace" fill="#EE0000" font-weight="bold">status:</text>
+  <rect x="45" y="339" width="340" height="35" rx="4" fill="#ffe0e8" stroke="#ff0454" stroke-width="1"/>
+  <text x="55" y="358" font-size="13" font-family="monospace" fill="#ff0454" font-weight="bold">status:</text>
   <text x="120" y="358" font-size="12" font-family="monospace" fill="#888">(géré par le cluster)</text>
 
   <!-- Annotations on the right -->
   <!-- apiVersion annotation -->
-  <line x1="385" y1="109" x2="430" y2="109" stroke="#326CE5" stroke-width="1.5"/>
-  <rect x="435" y="92" width="340" height="35" rx="6" fill="white" stroke="#326CE5" stroke-width="1.5"/>
-  <text x="450" y="108" font-size="12" font-weight="bold" fill="#326CE5">apiVersion</text>
+  <line x1="385" y1="109" x2="430" y2="109" stroke="#202cac" stroke-width="1.5"/>
+  <rect x="435" y="92" width="340" height="35" rx="6" fill="white" stroke="#202cac" stroke-width="1.5"/>
+  <text x="450" y="108" font-size="12" font-weight="bold" fill="#202cac">apiVersion</text>
   <text x="450" y="122" font-size="11" fill="#666">Version de l'API Kubernetes utilisée</text>
 
   <!-- kind annotation -->
@@ -67,9 +67,9 @@
   <text x="450" y="282" font-size="10" fill="#999">Vous le définissez, le cluster le réalise</text>
 
   <!-- status annotation -->
-  <rect x="435" y="300" width="340" height="45" rx="6" fill="white" stroke="#EE0000" stroke-width="1.5"/>
-  <line x1="385" y1="356" x2="430" y2="325" stroke="#EE0000" stroke-width="1.5"/>
-  <text x="450" y="318" font-size="12" font-weight="bold" fill="#EE0000">status</text>
+  <rect x="435" y="300" width="340" height="45" rx="6" fill="white" stroke="#ff0454" stroke-width="1.5"/>
+  <line x1="385" y1="356" x2="430" y2="325" stroke="#ff0454" stroke-width="1.5"/>
+  <text x="450" y="318" font-size="12" font-weight="bold" fill="#ff0454">status</text>
   <text x="450" y="332" font-size="11" fill="#666">Etat actuel (rempli par Kubernetes)</text>
   <text x="450" y="342" font-size="10" fill="#999">Ne pas modifier manuellement</text>
 </svg>

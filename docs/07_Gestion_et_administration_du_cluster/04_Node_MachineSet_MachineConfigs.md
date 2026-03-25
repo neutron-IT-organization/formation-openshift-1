@@ -1,197 +1,424 @@
-# Gestion des Nœuds, MachineSets et MachineConfigs dans OpenShift
+# Nœuds, MachineSets et MachineConfigs
 
 ## Introduction
 
-Dans OpenShift, la gestion des nœuds est une composante essentielle pour garantir le bon fonctionnement et la scalabilité des clusters. Les nœuds hébergent les workloads, qu’il s’agisse d’applications ou de services système, et sont supervisés à l’aide d’outils comme les **MachineSets** et les **MachineConfigs**. 
+La gestion de l'infrastructure physique et virtuelle d'un cluster OpenShift passe par trois niveaux d'abstraction complémentaires : les **Nœuds** (Nodes), les **MachineSets** et les **MachineConfigs**. Comprendre la distinction entre ces trois concepts est essentiel pour administrer efficacement un cluster en production.
 
-Les MachineSets permettent une gestion automatique du cycle de vie des machines qui composent un cluster, tandis que les MachineConfigs centralisent et standardisent les configurations système appliquées aux nœuds. Grâce à ces outils, OpenShift offre une flexibilité et une efficacité opérationnelle adaptées aux environnements modernes et complexes.
+- Les **Nœuds** sont la vue Kubernetes de la capacité de calcul disponible.
+- Les **MachineSets** gèrent le cycle de vie des machines sous-jacentes (provisionnement, scaling, remplacement).
+- Les **MachineConfigs** standardisent et appliquent la configuration système des nœuds (OS, services, fichiers de configuration).
 
-![Node vs MachineSet vs MachineConfig](./images/Machine-in-openshift.svg) 
+![Nœuds, MachineSets et MachineConfigs dans OpenShift](./images/Machine-in-openshift.svg)
 
-## Les Nœuds dans OpenShift : Fondations et Débogage
+*Relation entre les trois niveaux d'abstraction : le MachineSet provisionne des Machines qui deviennent des Nœuds Kubernetes. Le MachineConfig configure le système d'exploitation de ces nœuds via le Machine Config Operator.*
 
-### Qu’est-ce qu’un nœud dans OpenShift ? 
+---
 
-Un nœud est une machine (physique ou virtuelle) qui exécute des conteneurs via le runtime intégré à Kubernetes, tel que **CRI-O**. Les nœuds se divisent en deux catégories :
-- **Nœuds de calcul** : Hébergent les applications et workloads des utilisateurs.
-- **Nœuds de contrôle** : Supportent les composants critiques comme le planificateur Kubernetes, les API, et les contrôleurs.
+## Comparaison : Node vs MachineSet vs MachineConfig
 
-Chaque nœud inclut également des composants tels que **kubelet**, qui gère l’état des pods, et **kube-proxy**, responsable du routage réseau.
+| Concept | Couche | Rôle | Qui le gère |
+|---------|--------|------|-------------|
+| **Node** | Kubernetes | Représente la capacité de calcul (CPU, RAM) disponible pour les pods | Kubernetes Scheduler |
+| **Machine** | OpenShift Machine API | Représente une instance de machine (VM, bare-metal) dans le fournisseur cloud | Machine API Operator |
+| **MachineSet** | OpenShift Machine API | Groupe de machines avec une configuration commune, gère le scaling | Machine API Operator |
+| **MachineConfig** | OpenShift MCO | Configuration système appliquée à l'OS des nœuds (CoreOS) | Machine Config Operator |
+| **MachineConfigPool** | OpenShift MCO | Regroupe des nœuds ayant la même configuration cible | Machine Config Operator |
 
-### Débogage des nœuds avec `oc debug`
+:::info Architecture immutable avec CoreOS
+OpenShift utilise **Red Hat CoreOS (RHCOS)** comme système d'exploitation des nœuds. RHCOS est un OS immuable : la racine du système est en lecture seule, et les modifications se font via des MachineConfigs, pas manuellement sur les nœuds.
+:::
 
-Le débogage d’un nœud est souvent nécessaire pour résoudre des problèmes de performance ou de configuration. OpenShift propose la commande `oc debug nodes/<nom-du-nœud>` pour accéder à un environnement temporaire permettant d’investiguer un nœud en détail.
+---
 
-#### Fonctionnement de `oc debug` :
-1. **Création d’un pod de débogage** : La commande exécute un conteneur minimal basé sur l’image du système d’exploitation du nœud.
-2. **Accès au nœud** : Le conteneur est configuré avec des privilèges pour monter les fichiers système du nœud, tels que `/host`.
-3. **Diagnostic** : L’administrateur peut accéder aux journaux, modifier des fichiers, ou vérifier des configurations spécifiques.
+## Les Nœuds (Nodes)
 
-#### Exemple d’utilisation :
+### Anatomie d'un nœud OpenShift
+
+Un nœud OpenShift exécute plusieurs composants essentiels :
+
+| Composant | Rôle |
+|-----------|------|
+| **CRI-O** | Runtime de conteneurs (remplace Docker dans OpenShift 4) |
+| **kubelet** | Agent Kubernetes local — gère le cycle de vie des pods |
+| **kube-proxy** | Gestion des règles réseau iptables/nftables |
+| **OVN-Kubernetes** | Plugin réseau SDN (Software Defined Networking) |
+
+### Types de nœuds
+
+OpenShift distingue deux catégories principales de nœuds :
+
+| Type | Rôle | Workloads hébergés |
+|------|------|-------------------|
+| **Control Plane (master)** | Exécution du plan de contrôle Kubernetes | API Server, etcd, Scheduler, Controller Manager |
+| **Worker (compute)** | Exécution des charges applicatives | Pods utilisateur, opérateurs, services |
+| **Infra** | Nœuds dédiés aux composants d'infrastructure | Ingress Controller, Monitoring, Registry |
+
+:::tip Nœuds infra
+En production, il est recommandé de créer des nœuds `infra` dédiés aux composants OpenShift (monitoring, logging, registry) pour éviter que ces workloads n'entrent en concurrence avec les applications utilisateur.
+:::
+
+### Consulter l'état des nœuds
+
 ```bash
-oc debug nodes/<nom-du-nœud>
-chroot /host
-# Exemple : Vérifier l'état du service kubelet
-systemctl status kubelet
-# Exemple : Analyser les journaux de kubelet
-journalctl -u kubelet
+# Lister tous les nœuds avec leur rôle et leur état
+oc get nodes
+
+# Afficher des informations détaillées sur un nœud
+oc describe node <nom-du-nœud>
+
+# Voir la consommation de ressources par nœud
+oc adm top nodes
+
+# Lister les pods d'un nœud spécifique
+oc get pods --all-namespaces --field-selector spec.nodeName=<nom-du-nœud>
 ```
 
-Une fois le diagnostic terminé, il suffit de quitter le conteneur en tapant `exit`. Ce processus ne modifie pas directement l'état du nœud, garantissant un environnement sécurisé pour l'investigation.
+### Déboguer un nœud avec `oc debug`
 
+Quand un nœud présente des anomalies (processus bloqués, problème réseau, corruption de configuration), la commande `oc debug node` permet d'ouvrir un shell privilégié sur le nœud sans SSH direct.
+
+```bash
+# Ouvrir un shell de débogage sur un nœud
+oc debug node/<nom-du-nœud>
+
+# Dans le shell de débogage, accéder au système de fichiers du nœud
+chroot /host
+
+# Vérifier l'état du service kubelet
+systemctl status kubelet
+
+# Consulter les journaux du kubelet
+journalctl -u kubelet --since "1 hour ago"
+
+# Vérifier l'état du réseau
+ip route show
+ss -tlnp
+
+# Quitter le débogage
+exit
+```
+
+:::warning Prudence en mode debug
+Le pod de débogage s'exécute avec des privilèges élevés et accès au système de fichiers du nœud. Toute modification de fichiers dans `/host` modifie directement le nœud. Limitez les interventions au strict nécessaire.
+:::
+
+### Cordon, Drain et Delete
+
+Pour effectuer des opérations de maintenance sur un nœud (mise à jour, remplacement), OpenShift suit un processus en plusieurs étapes :
+
+```bash
+# 1. Cordon : empêcher de nouveaux pods d'être schedulés sur le nœud
+oc adm cordon <nom-du-nœud>
+
+# 2. Drain : évacuer les pods existants vers d'autres nœuds
+oc adm drain <nom-du-nœud> --ignore-daemonsets --delete-emptydir-data
+
+# 3. Maintenance / remplacement...
+
+# 4. Uncordon : remettre le nœud en service
+oc adm uncordon <nom-du-nœud>
+```
+
+---
 
 ## MachineSets : Gestion Automatisée des Nœuds
 
-Les MachineSets sont des ressources Kubernetes spécifiques à OpenShift, permettant la gestion automatique de groupes de nœuds. Ils garantissent qu’un nombre défini de machines est toujours disponible et opérationnel dans un cluster.
+### Principe de fonctionnement
 
-### Fonctionnalités principales :
-- **Provisionnement automatique** : Création et configuration des machines via l’intégration avec des fournisseurs cloud ou des environnements bare-metal.
-- **Mise à l’échelle dynamique** : Ajustement du nombre de machines en fonction des besoins (manuellement ou via des HPA/VPA).
-- **Remplacement automatique** : Recréation des nœuds défaillants pour maintenir la stabilité du cluster.
+Un **MachineSet** est l'équivalent, pour les machines physiques/virtuelles, de ce que le `ReplicaSet` est pour les pods. Il garantit qu'un nombre défini de machines correspondant à une certaine configuration est toujours disponible dans le cluster.
 
-### Exemple de MachineSet :
-Voici un exemple de MachineSet configuré pour un cluster OpenShift sur AWS :
+Le **Machine API Operator** surveille en permanence l'état des machines et prend les actions correctives nécessaires :
+- Si une machine tombe en panne, elle est automatiquement remplacée.
+- Si le nombre de replicas est augmenté, de nouvelles machines sont provisionnées dans le cloud.
+- Si le nombre est réduit, les machines excédentaires sont drainées puis supprimées.
+
+### Exemple de MachineSet sur AWS
+
 ```yaml
 apiVersion: machine.openshift.io/v1beta1
 kind: MachineSet
 metadata:
-  name: example-machineset
+  name: cluster-worker-us-east-1a
   namespace: openshift-machine-api
+  labels:
+    machine.openshift.io/cluster-api-cluster: mon-cluster
 spec:
   replicas: 3
   selector:
     matchLabels:
-      machine.openshift.io/cluster-api-cluster: example-cluster
-      machine.openshift.io/cluster-api-machineset: example-machineset
+      machine.openshift.io/cluster-api-cluster: mon-cluster
+      machine.openshift.io/cluster-api-machineset: cluster-worker-us-east-1a
   template:
     metadata:
       labels:
-        machine.openshift.io/cluster-api-cluster: example-cluster
-        machine.openshift.io/cluster-api-machineset: example-machineset
+        machine.openshift.io/cluster-api-cluster: mon-cluster
+        machine.openshift.io/cluster-api-machineset: cluster-worker-us-east-1a
+        machine.openshift.io/cluster-api-machine-role: worker
+        machine.openshift.io/cluster-api-machine-type: worker
     spec:
       providerSpec:
         value:
-          ami: ami-12345678
-          instanceType: m5.large
-          region: us-east-1
+          apiVersion: awsproviderconfig.openshift.io/v1beta1
+          kind: AWSMachineProviderConfig
+          ami:
+            id: ami-0abc123456789def0
+          instanceType: m5.xlarge
+          placement:
+            availabilityZone: us-east-1a
+            region: us-east-1
+          subnet:
+            filters:
+              - name: tag:Name
+                values:
+                  - mon-cluster-worker-us-east-1a
+          iamInstanceProfile:
+            id: mon-cluster-worker-profile
 ```
-Ce MachineSet provisionne trois machines virtuelles basées sur l’AMI et l’instance AWS spécifiées.
 
+### Scaling manuel d'un MachineSet
 
-## MachineConfigs : Standardisation des Configurations des Nœuds
+```bash
+# Voir tous les MachineSets
+oc get machinesets -n openshift-machine-api
 
-Les MachineConfigs permettent de gérer et d'appliquer des configurations système uniformes sur les nœuds d’un cluster. Ils sont particulièrement utiles pour appliquer des mises à jour, des règles de sécurité, ou des personnalisations spécifiques.
+# Scaler un MachineSet à 5 replicas
+oc scale machineset cluster-worker-us-east-1a \
+  --replicas=5 \
+  -n openshift-machine-api
 
-### Fonctionnement des MachineConfigs
-1. Les MachineConfigs sont appliqués par le **Machine Config Operator (MCO)**.
-2. Lorsqu’un nouveau MachineConfig est déployé, le MCO redémarre les nœuds concernés de manière progressive pour minimiser les interruptions.
-3. Les configurations sont stockées dans l’API Kubernetes, ce qui garantit leur traçabilité et leur versioning.
+# Surveiller la progression du provisionnement
+oc get machines -n openshift-machine-api -w
+```
 
-### Exemple de création d’un MachineConfig
+### Scaling automatique avec MachineAutoscaler
 
-Voici un exemple d’un MachineConfig permettant de modifier les paramètres de journalisation du kubelet :
+```yaml
+apiVersion: "autoscaling.openshift.io/v1beta1"
+kind: "MachineAutoscaler"
+metadata:
+  name: "worker-autoscaler"
+  namespace: openshift-machine-api
+spec:
+  minReplicas: 2
+  maxReplicas: 10
+  scaleTargetRef:
+    apiVersion: machine.openshift.io/v1beta1
+    kind: MachineSet
+    name: cluster-worker-us-east-1a
+```
+
+---
+
+## MachineConfigs : Configuration Système des Nœuds
+
+### Principe de fonctionnement
+
+Le **Machine Config Operator (MCO)** est responsable de la configuration continue de l'OS des nœuds. Il réconcilie la configuration déclarée (via des objets `MachineConfig`) avec l'état réel du système d'exploitation.
+
+Quand un nouveau `MachineConfig` est appliqué :
+1. Le MCO calcule la configuration résultante (en fusionnant tous les MachineConfigs applicables).
+2. Il applique les changements nœud par nœud (**rolling update**).
+3. Chaque nœud concerné est mis en maintenance, reconfiguré, puis redémarré.
+4. Le nœud ne revient en service que si la configuration a été appliquée avec succès.
+
+### Cas d'usage des MachineConfigs
+
+| Cas d'usage | Description |
+|-------------|-------------|
+| Modifier la configuration du kubelet | Ajuster les logs, les limites de pods par nœud |
+| Ajouter des fichiers système | Déposer des certificats CA, des fichiers de configuration |
+| Activer/désactiver des services systemd | Activer `iscsid` pour le stockage iSCSI, désactiver des services non nécessaires |
+| Configurer les paramètres kernel (sysctl) | Ajuster `net.ipv4.ip_forward`, limites de connexions, etc. |
+| Ajouter des extensions kernel modules | Charger des modules noyau spécifiques au démarrage |
+| Configurer le registre de conteneurs | Ajouter des miroirs de registry, des registres non sécurisés |
+
+### Exemple : ajouter un fichier de configuration
+
 ```yaml
 apiVersion: machineconfiguration.openshift.io/v1
 kind: MachineConfig
 metadata:
-  name: example-kubelet-config
+  name: 50-worker-chrony-config
   labels:
     machineconfiguration.openshift.io/role: worker
 spec:
   config:
     ignition:
-      version: 3.1.0
+      version: 3.2.0
     storage:
       files:
-        - path: /etc/kubernetes/kubelet.conf
+        - path: /etc/chrony.conf
           mode: 0644
+          overwrite: true
           contents:
-            source: data:text/plain;charset=utf-8;base64,...(contenu encodé en base64)...
+            source: data:text/plain;charset=utf-8,pool%20ntp.example.com%20iburst%0Adriftfile%20%2Fvar%2Flib%2Fchrony%2Fdrift%0Amakestep%201.0%203%0Artcsync%0Alogdir%20%2Fvar%2Flog%2Fchrony
 ```
-#### Étapes :
-1. **Appliquer le fichier YAML** :
-   ```bash
-   oc apply -f example-kubelet-config.yaml
-   ```
-2. **Vérifier l’état des nœuds** :
-   ```bash
-   oc get nodes
-   ```
-   Les nœuds concernés redémarreront et appliqueront les changements.
 
-![MachineConfig dashboard](./images/machineconfigs-dashboard.png) 
+### Exemple : activer un service systemd
 
-## Gestion et Visualisation via la Console OpenShift : Détails et Navigation
+```yaml
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  name: 40-worker-enable-iscsid
+  labels:
+    machineconfiguration.openshift.io/role: worker
+spec:
+  config:
+    ignition:
+      version: 3.2.0
+    systemd:
+      units:
+        - name: iscsid.service
+          enabled: true
+```
 
-### Tableau de Bord des Nœuds
+### MachineConfigPools
 
-La console OpenShift offre une interface utilisateur intuitive pour surveiller les nœuds et identifier rapidement les problèmes potentiels. Voici comment y accéder et ce que vous pouvez y faire :
+Les nœuds sont regroupés en **MachineConfigPools (MCP)** selon leur rôle. Par défaut, il en existe deux : `master` et `worker`. Il est possible d'en créer d'autres pour les nœuds infra.
 
-1. **Accès au tableau de bord des nœuds** :
-   - Connectez-vous à la console OpenShift.
-   - Dans le menu de gauche, cliquez sur **Compute** > **Nodes**.
+```bash
+# Lister les MachineConfigPools
+oc get mcp
 
-2. **Informations disponibles dans la vue des nœuds** :
-   - **Utilisation CPU et mémoire** :
-     - La colonne **Usage** affiche la consommation en temps réel du CPU et de la mémoire pour chaque nœud.
-     - En cliquant sur un nœud, vous accédez à des graphiques détaillés montrant l’évolution de ces métriques dans le temps.
-   - **État de santé des nœuds** :
-     - La colonne **Status** indique si un nœud est en état `Ready`, `Not Ready` ou présente un autre état d’erreur.
-     - Les icônes associées permettent de détecter rapidement les anomalies.
-   - **Chargement des pods** :
-     - Une colonne dédiée affiche le nombre de pods actifs sur chaque nœud.
-     - En cliquant sur un nœud, vous obtenez une liste complète des pods qu’il héberge, avec des informations telles que leur état (`Running`, `Pending`, `Failed`).
+# Observer l'application d'un MachineConfig en temps réel
+oc get mcp -w
 
-3. **Fonctionnalités additionnelles** :
-   - Vous pouvez étiqueter ou annoter les nœuds directement depuis la console pour faciliter leur identification.
-   - La console permet également de lancer une commande de débogage pour un nœud spécifique via l’option **Debug Node**.
+# Vérifier les MachineConfigs appliqués à un pool
+oc describe mcp worker
+```
 
-![MachineConfig dashboard](./images/node-dashboard.png) 
+Un MachineConfigPool affiche son état via plusieurs colonnes importantes :
 
-### Gestion des MachineSets et MachineConfigs
+| Colonne | Signification |
+|---------|---------------|
+| `UPDATED` | Nombre de nœuds à jour avec la configuration cible |
+| `UPDATING` | Nombre de nœuds en cours de mise à jour |
+| `DEGRADED` | Nombre de nœuds en erreur |
 
-La console simplifie la gestion des MachineSets et MachineConfigs grâce à une interface claire et intuitive. Voici les étapes pour accéder à ces ressources et les manipuler.
+:::warning Impact sur la disponibilité
+L'application d'un MachineConfig entraîne le redémarrage de chaque nœud concerné. En production, planifiez l'application des MachineConfigs pendant des fenêtres de maintenance, et vérifiez que vos workloads ont des `PodDisruptionBudgets` configurés pour éviter toute interruption de service.
+:::
 
-#### **Gestion des MachineSets** :
-1. **Accès aux MachineSets** :
-   - Dans le menu de gauche, cliquez sur **Compute** > **MachineSets**.
-   - Vous verrez une liste de tous les MachineSets configurés dans le cluster.
+---
 
-2. **Actions possibles sur un MachineSet** :
-   - **Ajuster la taille d’un MachineSet** :
-     - Cliquez sur le MachineSet que vous souhaitez modifier.
-     - Dans la section **Details**, recherchez le champ **Replicas**.
-     - Modifiez le nombre de répliques selon vos besoins, puis cliquez sur **Save**.
-     - La console provisionnera ou supprimera automatiquement des machines pour atteindre le nombre spécifié.
-   - **Surveiller l’état** :
-     - La colonne **Status** montre si les machines associées au MachineSet sont actives et synchronisées.
-     - Les alertes ou erreurs liées à un MachineSet apparaissent directement dans cette vue.
+## Taints, Tolérances et Node Selectors
 
-#### **Supervision et Configuration des MachineConfigs** :
-1. **Accès aux MachineConfigs** :
-   - Dans le menu de gauche, cliquez sur **Compute** > **MachineConfigs**.
-   - Une liste des MachineConfigs existants est affichée avec leurs labels et leurs statuts.
+### Taints et Tolérances
 
-2. **Détails disponibles** :
-   - En cliquant sur un MachineConfig, vous pouvez voir son contenu YAML, les nœuds ciblés (via le label `machineconfiguration.openshift.io/role`), et les journaux d’application.
-   - La section **Conditions** montre si la configuration a été correctement appliquée ou si des erreurs sont survenues.
+Les **taints** (souillures) permettent de marquer un nœud pour repousser les pods qui ne déclarent pas explicitement une tolérance. C'est le mécanisme inverse des labels/sélecteurs : plutôt que d'attirer des pods, les taints repoussent.
 
-3. **Créer ou modifier une MachineConfig** :
-   - Cliquez sur **Create MachineConfig** pour définir une nouvelle configuration.
-   - Remplissez les champs nécessaires ou chargez un fichier YAML préconfiguré.
-   - Une fois la MachineConfig appliquée, la console affiche son état dans la liste principale. Les nœuds ciblés redémarreront progressivement pour appliquer les modifications.
+**Ajouter une taint sur un nœud :**
 
-4. **Résolution des erreurs** :
-   - Si une MachineConfig échoue, un message d’erreur détaillé est affiché.
-   - Vous pouvez consulter les journaux dans la vue des détails ou accéder à la liste des nœuds affectés pour investiguer.
+```bash
+# Syntaxe : oc adm taint nodes <node> <key>=<value>:<effect>
+# Effects disponibles : NoSchedule, PreferNoSchedule, NoExecute
+
+# Marquer un nœud comme réservé pour les workloads GPU
+oc adm taint nodes worker-gpu-01 dedicated=gpu:NoSchedule
+
+# Retirer une taint
+oc adm taint nodes worker-gpu-01 dedicated=gpu:NoSchedule-
+```
+
+**Déclarer une tolérance dans un pod :**
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gpu-workload
+spec:
+  tolerations:
+    - key: "dedicated"
+      operator: "Equal"
+      value: "gpu"
+      effect: "NoSchedule"
+  containers:
+    - name: gpu-app
+      image: my-gpu-app:latest
+```
+
+| Effect | Comportement |
+|--------|-------------|
+| `NoSchedule` | Les pods sans tolérance ne sont pas schedulés sur ce nœud |
+| `PreferNoSchedule` | Kubernetes évite de scheduler des pods sans tolérance, mais peut le faire si nécessaire |
+| `NoExecute` | Les pods sans tolérance sont évincés du nœud (et ne peuvent pas y être schedulés) |
+
+### Node Selectors
+
+Les **node selectors** permettent de contraindre un pod à s'exécuter sur des nœuds ayant des labels spécifiques.
+
+**Ajouter un label sur un nœud :**
+
+```bash
+# Labelliser un nœud avec un type de matériel
+oc label node worker-gpu-01 hardware-type=gpu
+
+# Vérifier les labels d'un nœud
+oc get node worker-gpu-01 --show-labels
+```
+
+**Utiliser un nodeSelector dans un pod ou Deployment :**
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gpu-inference
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: gpu-inference
+  template:
+    metadata:
+      labels:
+        app: gpu-inference
+    spec:
+      nodeSelector:
+        hardware-type: gpu
+      containers:
+        - name: inference
+          image: inference-app:latest
+```
+
+### Node Affinity (alternative avancée)
+
+Pour des règles de placement plus fines (obligatoires ou préférentielles), utilisez les **node affinity rules** :
+
+```yaml
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: hardware-type
+                operator: In
+                values:
+                  - gpu
+                  - fpga
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 1
+          preference:
+            matchExpressions:
+              - key: zone
+                operator: In
+                values:
+                  - us-east-1a
+```
+
+:::tip Combiner taints et node selectors
+En production, combinez les deux mécanismes : utilisez des taints pour s'assurer que seuls les workloads autorisés s'exécutent sur les nœuds spécialisés, et utilisez des node selectors dans les Deployments pour que ces workloads soient bien dirigés vers les bons nœuds.
+:::
+
+---
 
 ## Bonnes Pratiques
 
-1. **Planification des modifications** : Toujours tester les MachineConfigs sur un sous-ensemble de nœuds.
-2. **Surveillance active** : Utiliser les métriques pour détecter les déséquilibres de charge entre les nœuds.
-3. **Documentation** : Conserver un historique des MachineConfigs appliqués pour faciliter le dépannage.
-
-
-## Conclusion
-
-La gestion des nœuds dans OpenShift est optimisée par l’intégration des MachineSets et des MachineConfigs. Ces outils permettent non seulement de simplifier l’administration quotidienne, mais aussi de garantir la conformité et la performance des clusters. Grâce à des fonctionnalités telles que le débogage via `oc debug` et la configuration centralisée des nœuds, OpenShift offre une plateforme robuste pour héberger des workloads critiques et garantir leur bon fonctionnement.
+1. **Ne modifiez jamais un nœud manuellement** : toute modification manuelle sera écrasée par le MCO. Utilisez toujours des MachineConfigs pour les changements de configuration système.
+2. **Nommez vos MachineConfigs avec un préfixe numérique** : le MCO les fusionne et les applique dans l'ordre alphabétique. Un prefixe `00-`, `50-`, `99-` permet de contrôler l'ordre d'application.
+3. **Testez les MachineConfigs sur un nœud de test** : créez un MachineConfigPool dédié avec un seul nœud avant de déployer une nouvelle configuration sur l'ensemble du pool `worker`.
+4. **Surveillez l'état des MachineConfigPools** : un pool en état `DEGRADED` indique qu'un nœud n'a pas pu appliquer la configuration. Consultez les journaux du MCO pour diagnostiquer.
+5. **Documentez vos MachineConfigs** : chaque MachineConfig doit avoir une annotation `description` expliquant son objectif pour faciliter la maintenance future.

@@ -1,58 +1,285 @@
-# Observabilité et Gestion des Métriques dans OpenShift
+# Observabilité du Cluster OpenShift
 
 ## Introduction
 
-L’observabilité est un pilier fondamental pour garantir une gestion efficace des clusters OpenShift. Elle offre une vision globale et détaillée du fonctionnement de l’infrastructure, des applications et des ressources. OpenShift s’appuie sur des outils tels que **Prometheus**, une solution de monitoring open-source, pour collecter et analyser des métriques en temps réel. Ces métriques sont ensuite utilisées pour fournir des visualisations, détecter des anomalies et générer des alertes, permettant ainsi une intervention rapide et proactive.
+L'observabilité est la capacité à comprendre l'état interne d'un système à partir de ses sorties externes. Dans le contexte d'un cluster OpenShift, cela signifie être capable de répondre à des questions comme : les nœuds sont-ils sains ? Les applications consomment-elles trop de mémoire ? Y a-t-il des erreurs réseau répétées ? Des pods sont-ils en boucle de redémarrage ?
 
-La console OpenShift joue également un rôle central dans la présentation des données collectées. Elle propose des tableaux de bord interactifs et des fonctionnalités qui simplifient l’accès à l’état des ressources et facilitent la gestion des incidents. Cette combinaison d'outils et d'interface garantit une surveillance continue et une compréhension approfondie des systèmes en exploitation.
+OpenShift intègre nativement une stack d'observabilité complète, basée sur des outils open-source de référence. Ce chapitre présente l'architecture de monitoring, les métriques essentielles, les requêtes PromQL et les bonnes pratiques d'exploitation.
 
+---
 
+## Les Trois Piliers de l'Observabilité
 
-## Importance des Métriques et de l'Alerting
+L'observabilité d'une plateforme cloud-native repose sur trois disciplines complémentaires :
 
-Les métriques constituent la base de tout système d’observabilité. Dans OpenShift, elles fournissent une vue claire et exploitable sur des éléments tels que la charge CPU, l’utilisation de la mémoire, l’état des pods et les performances du stockage. En surveillant ces données, les administrateurs peuvent identifier des tendances, anticiper des problèmes et réagir avant qu’ils n’affectent les utilisateurs finaux.
+| Pilier | Description | Outil dans OpenShift |
+|--------|-------------|----------------------|
+| **Métriques** | Mesures numériques collectées à intervalles réguliers (CPU, mémoire, latence, taux d'erreur) | Prometheus |
+| **Logs** | Enregistrements textuels des événements produits par les applications et les composants système | OpenShift Logging (Loki / Elasticsearch) |
+| **Traces** | Suivi du chemin d'une requête à travers les différents microservices | OpenShift Distributed Tracing (Jaeger / Tempo) |
 
-L’un des aspects les plus critiques de l’observabilité est la capacité à générer des alertes en fonction des seuils définis sur les métriques. Par exemple, si l’utilisation de la mémoire sur un nœud dépasse un certain pourcentage pendant une période prolongée, une alerte est automatiquement déclenchée. Ces alertes jouent un rôle clé dans la prévention des incidents en signalant rapidement les anomalies. Cela permet aux équipes de se concentrer sur la résolution des problèmes plutôt que sur leur identification.
+:::info Portée de ce chapitre
+Ce chapitre se concentre sur les **métriques** et l'**alerting**, qui constituent la couche d'observabilité activée par défaut dans tout cluster OpenShift. Les logs et les traces nécessitent l'installation d'opérateurs supplémentaires.
+:::
 
-Prometheus, intégré dans OpenShift, est responsable de la gestion de ces alertes. Il collecte les métriques à intervalles réguliers, applique les règles d'alerte configurées, et informe les administrateurs dès qu'une condition critique est atteinte. Ces alertes ne sont pas seulement des notifications, mais elles incluent également des informations précieuses comme la métrique concernée, la valeur observée, et les ressources impactées. Cette approche permet une réponse rapide et ciblée.
+---
 
+## Architecture de la Stack de Monitoring
 
+OpenShift déploie automatiquement une stack de monitoring complète dans le namespace `openshift-monitoring`. Cette stack est entièrement gérée par l'opérateur **Cluster Monitoring Operator (CMO)**, qui assure sa configuration, sa mise à jour et sa haute disponibilité.
 
-## Gestion des Alertes avec Prometheus
+![Architecture de monitoring OpenShift](./images/Openshift-Monitoring.svg)
 
-Le système d’alertes dans OpenShift repose sur des règles configurées dans Prometheus, qui peuvent être personnalisées selon les besoins spécifiques du cluster. Par exemple, dans un environnement où la charge CPU est particulièrement critique, il est possible de définir des règles pour recevoir une alerte dès que l'utilisation dépasse un seuil défini, comme 85 %, pendant plus de cinq minutes.
+*Architecture de la stack de monitoring OpenShift : Prometheus collecte les métriques, Alertmanager gère les notifications, et Thanos Querier agrège les données pour une vue globale.*
 
-Une fois qu’une alerte est générée, elle peut être envoyée à divers canaux de communication, tels que des emails ou des outils collaboratifs comme Slack ou PagerDuty. Cette intégration garantit que les équipes opérationnelles sont immédiatement informées des problèmes, ce qui réduit le temps de réponse. En pratique, cela permet d’éviter des pannes prolongées ou des interruptions de service majeures. La capacité de personnalisation des règles d'alerte et des seuils rend Prometheus particulièrement flexible et adaptable à divers environnements et charges de travail.
+### Les composants principaux
 
-Dans la console OpenShift, les alertes actives et leur historique sont accessibles directement. Cette visibilité offre aux administrateurs un contexte supplémentaire, comme les tendances associées aux alertes précédentes, qui peut être utilisé pour diagnostiquer des problèmes complexes.
+| Composant | Rôle | Namespace |
+|-----------|------|-----------|
+| **Prometheus** | Collecte et stockage des métriques, évaluation des règles d'alerte | `openshift-monitoring` |
+| **Alertmanager** | Réception, déduplication et routage des alertes vers les canaux de notification | `openshift-monitoring` |
+| **Thanos Querier** | Agrégation des métriques entre plusieurs instances Prometheus | `openshift-monitoring` |
+| **Grafana** | Tableaux de bord de visualisation (lecture seule par défaut) | `openshift-monitoring` |
+| **kube-state-metrics** | Exporte les métriques d'état des objets Kubernetes (Deployments, Pods, Nodes) | `openshift-monitoring` |
+| **node-exporter** | Exporte les métriques système des nœuds (CPU, RAM, disque, réseau) | `openshift-monitoring` |
 
+### Monitoring des applications utilisateur
 
-## Utilisation de la Console OpenShift pour l'Observabilité
+En plus du monitoring de la plateforme, OpenShift permet d'activer un monitoring dédié aux **workloads utilisateur**. Cela déploie une instance Prometheus séparée dans `openshift-user-workload-monitoring`.
 
-La console OpenShift joue un rôle essentiel dans l’interprétation et la présentation des données collectées par Prometheus. Elle propose une interface intuitive où les administrateurs peuvent explorer les performances du cluster et identifier rapidement les points nécessitant une attention particulière. Les tableaux de bord disponibles sont conçus pour offrir une vue d’ensemble tout en permettant des analyses détaillées.
+```bash
+# Activer le monitoring des workloads utilisateur
+oc patch configmap cluster-monitoring-config \
+  -n openshift-monitoring \
+  --type=merge \
+  -p '{"data":{"config.yaml":"enableUserWorkload: true\n"}}'
+```
 
-Par exemple, le tableau de bord des nœuds fournit une vue agrégée des ressources consommées par chaque nœud du cluster, comme le CPU, la mémoire et le stockage. Cette vue est essentielle pour repérer les nœuds surchargés ou sous-utilisés. En explorant ces données, un administrateur peut décider d’équilibrer la charge ou d’ajouter des ressources pour maintenir les performances du cluster.
+:::tip Séparation des concerns
+La séparation entre le monitoring de la plateforme et celui des workloads utilisateur permet aux équipes applicatives de définir leurs propres règles d'alerte sans impacter la configuration système.
+:::
 
-De même, le tableau de bord des pods offre un aperçu de l’état des applications déployées. Les administrateurs peuvent rapidement identifier combien de pods sont opérationnels, en attente ou en échec. Cela leur permet de diagnostiquer et de résoudre des problèmes comme des crashs de conteneurs ou des dépassements de quotas de ressources.
+---
 
-Le tableau de bord du stockage complète cette vue en mettant en évidence l’utilisation des volumes persistants. Grâce à des graphiques clairs, les équipes peuvent suivre la consommation des volumes attachés aux applications, anticiper les saturations de stockage et planifier des extensions si nécessaire.
+## Consulter les Métriques depuis la Console
 
-![Openshift Monitoring](./images/Console-monitoring-openshift.png)
+La console OpenShift expose une interface dédiée à l'observabilité sous la section **Observe** du menu latéral.
 
-## Visualisation et Analyse des Métriques dans OpenShift
+![Console OpenShift — Observe > Dashboards](./images/console-monitoring.svg)
 
-L’une des forces d’OpenShift réside dans sa capacité à présenter des métriques sous forme visuelle. Les graphiques générés par la console permettent non seulement de surveiller les performances en temps réel, mais aussi d'analyser des tendances historiques. Ces analyses sont essentielles pour identifier des comportements récurrents ou pour ajuster la configuration du cluster en fonction des besoins futurs.
+*Vue "Dashboards" dans la console OpenShift : le tableau de bord "Kubernetes / Compute Resources / Namespace" affiche l'utilisation CPU, mémoire et le nombre de pods pour un namespace sélectionné.*
 
-Prometheus fournit une interface native pour interroger les données collectées via **PromQL**, un langage de requête puissant. Cependant, la console OpenShift simplifie cette tâche en proposant des visualisations prêtes à l’emploi. Par exemple, un administrateur souhaitant surveiller l’utilisation du CPU au cours des dernières 24 heures peut accéder à un graphique interactif qui met en évidence les périodes de forte charge.
+### Les sous-sections disponibles
 
-Ces capacités de visualisation et d’analyse permettent une prise de décision éclairée. Les administrateurs peuvent ainsi ajuster les ressources, modifier les configurations ou même repenser l’architecture des applications pour maximiser les performances.
+| Section | Contenu |
+|---------|---------|
+| **Dashboards** | Tableaux de bord préconfigurés (nœuds, namespaces, pods, Kubernetes) |
+| **Metrics** | Interface de requêtes PromQL avec graphiques interactifs |
+| **Alerts** | Liste des alertes actives et de leur historique |
+| **Targets** | Etat des cibles de scraping Prometheus (up/down) |
 
+---
 
-![Openshift Monitoring](./images/Openshift-Monitoring.svg)
+## Métriques Essentielles à Surveiller
 
+### Métriques de ressources computationnelles
 
-## Conclusion
+| Métrique | Signification | Seuil d'alerte typique |
+|----------|---------------|------------------------|
+| CPU usage par pod | Consommation CPU réelle vs limite configurée | > 90% de la limite |
+| Memory usage par pod | Consommation mémoire réelle vs limite | > 85% de la limite |
+| CPU throttling | Pourcentage du temps où le pod est limité en CPU | > 25% |
+| OOMKill | Nombre de fois où un pod a été tué pour dépassement mémoire | > 0 |
 
-L’observabilité dans OpenShift, basée sur des outils comme Prometheus et intégrée dans une console conviviale, est un atout majeur pour garantir la stabilité et la résilience des clusters. En collectant et en analysant des métriques en temps réel, OpenShift offre aux administrateurs les moyens de comprendre l’état de leur infrastructure, de détecter les anomalies et de réagir rapidement grâce à un système d’alertes performant.
+### Métriques réseau
 
-L’utilisation combinée des tableaux de bord interactifs et des notifications proactives réduit les risques d’interruption de service et améliore l’efficacité opérationnelle. En adoptant une approche axée sur l’observabilité, les entreprises peuvent non seulement optimiser leurs ressources mais également garantir une expérience utilisateur fluide et fiable, même dans les environnements les plus exigeants.
+| Métrique | Signification |
+|----------|---------------|
+| `container_network_receive_bytes_total` | Octets reçus par conteneur |
+| `container_network_transmit_bytes_total` | Octets envoyés par conteneur |
+| `container_network_receive_errors_total` | Erreurs de réception réseau |
+
+### Métriques d'état des workloads
+
+| Métrique | Signification |
+|----------|---------------|
+| `kube_pod_container_status_restarts_total` | Nombre de redémarrages d'un conteneur |
+| `kube_deployment_status_replicas_unavailable` | Replicas non disponibles dans un Deployment |
+| `kube_node_status_condition` | Etat de santé d'un nœud |
+| `kubelet_running_pods` | Nombre de pods actifs sur un nœud |
+
+### Métriques de stockage
+
+| Métrique | Signification |
+|----------|---------------|
+| `kubelet_volume_stats_used_bytes` | Espace utilisé dans un volume persistant |
+| `kubelet_volume_stats_capacity_bytes` | Capacité totale d'un volume persistant |
+| `kubelet_volume_stats_inodes_free` | Inodes disponibles (saturation système de fichiers) |
+
+---
+
+## Requêtes PromQL : Exemples Pratiques
+
+**PromQL** (Prometheus Query Language) est le langage de requête natif de Prometheus. Il permet d'interroger, d'agréger et de transformer les métriques collectées.
+
+### Utilisation CPU d'un namespace
+
+```promql
+# CPU utilisé par tous les pods d'un namespace (en cores)
+sum(rate(container_cpu_usage_seconds_total{namespace="webapp", container!=""}[5m]))
+```
+
+### Pourcentage de mémoire utilisée par un pod
+
+```promql
+# Ratio mémoire utilisée / limite pour chaque conteneur
+container_memory_working_set_bytes{namespace="webapp"}
+  /
+container_spec_memory_limit_bytes{namespace="webapp"} * 100
+```
+
+### Détecter les pods en redémarrage fréquent
+
+```promql
+# Pods avec plus de 5 redémarrages dans le namespace "webapp"
+kube_pod_container_status_restarts_total{namespace="webapp"} > 5
+```
+
+### Taux d'erreurs HTTP (si métriques applicatives exposées)
+
+```promql
+# Taux d'erreurs 5xx sur les 5 dernières minutes
+rate(http_requests_total{status=~"5..", namespace="webapp"}[5m])
+```
+
+### Espace disque restant sur les volumes persistants (alerte < 20%)
+
+```promql
+(
+  kubelet_volume_stats_capacity_bytes - kubelet_volume_stats_used_bytes
+) / kubelet_volume_stats_capacity_bytes * 100 < 20
+```
+
+:::info Accès à l'interface PromQL
+Dans la console OpenShift, accédez à **Observe > Metrics** pour saisir et exécuter des requêtes PromQL directement depuis le navigateur, avec visualisation graphique intégrée.
+:::
+
+---
+
+## Gestion des Alertes avec Alertmanager
+
+### Architecture de l'alerting
+
+Le flux d'alerte dans OpenShift suit ce chemin :
+
+1. **Prometheus** évalue en continu les règles d'alerte (PrometheusRule).
+2. Quand une condition est vraie pendant la durée `for` configurée, l'alerte passe en état **firing**.
+3. **Alertmanager** reçoit l'alerte et applique les règles de routage.
+4. L'alerte est transmise aux **receivers** configurés (email, Slack, PagerDuty, webhook).
+
+### Configurer un receiver Alertmanager
+
+```yaml
+apiVersion: monitoring.coreos.com/v1beta1
+kind: AlertmanagerConfig
+metadata:
+  name: slack-alerts
+  namespace: webapp
+spec:
+  route:
+    receiver: slack-notifications
+    groupBy: ['alertname', 'namespace']
+    groupWait: 30s
+    groupInterval: 5m
+    repeatInterval: 12h
+  receivers:
+    - name: slack-notifications
+      slackConfigs:
+        - apiURL:
+            name: slack-webhook-secret
+            key: url
+          channel: '#openshift-alerts'
+          title: 'Alerte OpenShift — {{ .GroupLabels.alertname }}'
+          text: 'Namespace: {{ .GroupLabels.namespace }}'
+```
+
+### Créer une règle d'alerte personnalisée
+
+```yaml
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: webapp-alerts
+  namespace: webapp
+spec:
+  groups:
+    - name: webapp.rules
+      interval: 30s
+      rules:
+        - alert: PodRestartingTooOften
+          expr: |
+            rate(kube_pod_container_status_restarts_total{namespace="webapp"}[15m]) * 60 > 1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Pod {{ $labels.pod }} redémarre trop souvent"
+            description: "Le pod {{ $labels.pod }} du namespace {{ $labels.namespace }} a redémarré plus d'une fois par minute sur les 15 dernières minutes."
+```
+
+:::warning Alertes système prédéfinies
+OpenShift fournit plus de 200 règles d'alerte prédéfinies couvrant tous les composants de la plateforme. Avant de créer vos propres règles, vérifiez dans **Observe > Alerts** si une alerte similaire n'existe pas déjà.
+:::
+
+---
+
+## Tableaux de Bord Préconfigurés
+
+La console OpenShift inclut plusieurs tableaux de bord Grafana accessibles directement dans **Observe > Dashboards** :
+
+| Tableau de bord | Contenu |
+|-----------------|---------|
+| `Kubernetes / Compute Resources / Cluster` | Vue globale du cluster (CPU, mémoire, pods) |
+| `Kubernetes / Compute Resources / Namespace` | Ressources consommées par namespace |
+| `Kubernetes / Compute Resources / Pod` | Ressources d'un pod spécifique |
+| `Kubernetes / Networking / Namespace` | Trafic réseau par namespace |
+| `Node Exporter / Nodes` | Métriques système des nœuds (disque, réseau, charge) |
+| `OpenShift / etcd` | Santé et performance du cluster etcd |
+
+---
+
+## Commandes CLI Utiles pour le Monitoring
+
+```bash
+# Lister toutes les règles d'alerte actives
+oc get prometheusrule --all-namespaces
+
+# Voir les alertes en cours de déclenchement
+oc get alerts -n openshift-monitoring
+
+# Accéder à l'interface Prometheus (port-forward)
+oc port-forward svc/prometheus-k8s 9090:9090 -n openshift-monitoring
+
+# Accéder à l'interface Alertmanager (port-forward)
+oc port-forward svc/alertmanager-main 9093:9093 -n openshift-monitoring
+
+# Vérifier l'état du Cluster Monitoring Operator
+oc get clusteroperator monitoring
+```
+
+---
+
+## Bonnes Pratiques d'Observabilité
+
+1. **Définissez des limites de ressources** sur tous vos pods : sans limites, les métriques d'utilisation relative (CPU throttling, mémoire en %) n'ont pas de sens.
+2. **Créez des alertes sur les symptômes, pas sur les causes** : une alerte "taux d'erreur > 1%" est plus utile qu'une alerte "CPU > 80%".
+3. **Instrumentez vos applications** : exposez un endpoint `/metrics` au format Prometheus pour bénéficier du monitoring applicatif en plus du monitoring infrastructure.
+4. **Testez vos alertes** : utilisez `amtool` ou l'interface Alertmanager pour simuler des alertes et vérifier que les receivers sont bien configurés.
+5. **Archivez les métriques importantes** : Prometheus conserve les métriques par défaut pendant 15 jours. Pour une rétention plus longue, configurez Thanos avec un stockage objet externe.
+
+:::tip Monitoring des quotas de ressources
+Ajoutez une alerte sur l'utilisation des `ResourceQuota` de chaque namespace. Quand un quota est à 80% de sa limite, il est temps d'anticiper une augmentation ou une optimisation.
+```promql
+kube_resourcequota{type="used"} / kube_resourcequota{type="hard"} > 0.8
+```
+:::
