@@ -162,9 +162,9 @@ OpenShift n'est pas un fork de Kubernetes : il *embarque* Kubernetes (upstream) 
 | Service Mesh | Non | Oui (OpenShift Service Mesh, Istio) |
 | Serverless | Non | Oui (OpenShift Serverless, Knative) |
 
-![Pile technologique OpenShift](./images/ocp_stack.png)
+![La famille OpenShift — couches de la plateforme](./images/openshift-stack-layers.svg)
 
-*OpenShift s'appuie sur Kubernetes et y intègre des couches supplémentaires pour les entreprises.*
+*La famille OpenShift : de l'infrastructure jusqu'aux offres managées, en passant par RHCOS, Kubernetes et OCP*
 
 ### Les spécificités majeures d'OpenShift
 

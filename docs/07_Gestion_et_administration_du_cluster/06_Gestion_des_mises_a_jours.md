@@ -23,6 +23,10 @@ Contrairement à une mise à jour traditionnelle qui nécessite une intervention
 Par défaut, le cluster doit pouvoir accéder à `api.openshift.com` pour consulter le graphe de mises à jour. Dans les environnements air-gapped (sans accès Internet), une configuration spécifique avec un miroir de registry local est nécessaire.
 :::
 
+![Processus de mise à jour OpenShift](./images/openshift-upgrades.svg)
+
+*Le CVO orchestre la mise à jour de toutes les couches du cluster dans un ordre déterminé*
+
 ### Le Cluster Version Operator (CVO)
 
 Le **Cluster Version Operator** est le chef d'orchestre de toutes les mises à jour. Il s'exécute dans le namespace `openshift-cluster-version` et est responsable de :

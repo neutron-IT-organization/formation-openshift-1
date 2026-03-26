@@ -155,6 +155,10 @@ oc get network.operator cluster -o yaml
 
 OpenShift supporte plusieurs plugins CNI. Le tableau suivant synthétise leurs caractéristiques pour vous aider à choisir en fonction de votre contexte :
 
+![Plugins CNI supportés par OpenShift](./images/cni-plugins.svg)
+
+*Vue d'ensemble des plugins CNI disponibles — OVN-Kubernetes est le défaut depuis OpenShift 4.12*
+
 | Critère | OVN-Kubernetes | OpenShift SDN | Calico | Cilium |
 |---|---|---|---|---|
 | Statut dans OCP | **Par défaut (4.12+)** | Déprécié (4.14+) | Via opérateur tiers | Via opérateur tiers |
