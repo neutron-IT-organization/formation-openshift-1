@@ -1,15 +1,34 @@
-# Quiz sur l'architecture d'Openshift
+# Quiz — Architecture OpenShift et Kubernetes
 
-Nous allons maintenant faire un quiz pour évaluer votre compréhension de la partie "Architecture d'OpenShift". Ce quiz couvrira les concepts  abordés.
-
-Pour joindre le quiz, veuillez suivre les étapes suivantes :
-
-1. Ouvrez l'application Quizizz sur votre appareil ou rendez-vous sur : [https://quizizz.com/join](https://quizizz.com/join).
-
-2. Entrez le numéro fourni par l'instructeur pour accéder au quiz.
-
-![container stack](./images/quizizz.svg)
+Il est temps de tester vos connaissances sur l'architecture d'OpenShift et Kubernetes !
 
 ---
 
-Bonne chance à tous !
+## Comment participer
+
+1. Rendez-vous sur **[https://rahoot.apps.neutron-sno-office.neutron-it.fr](https://rahoot.apps.neutron-sno-office.neutron-it.fr)**
+2. Entrez le **code de la salle** communiqué par votre formateur
+3. Choisissez un pseudo et attendez le lancement du quiz
+
+:::info Pour le formateur
+- Accédez à [https://rahoot.apps.neutron-sno-office.neutron-it.fr/manager](https://rahoot.apps.neutron-sno-office.neutron-it.fr/manager)
+- Mot de passe : `formation-openshift`
+- Sélectionnez le quiz **"Architecture OpenShift et Kubernetes"** et lancez la partie
+- Communiquez le code de la salle aux participants
+:::
+
+---
+
+## Thèmes abordés
+
+Ce quiz couvre les concepts vus dans le chapitre **Architecture OpenShift et Kubernetes** :
+
+- Composants du control plane (API server, etcd, scheduler, controller manager)
+- Rôle du kubelet et des nœuds workers
+- Runtime de conteneurs (CRI-O, CRI)
+- Méthodes d'installation IPI et UPI
+- Operators et CustomResourceDefinitions
+
+---
+
+Bonne chance !

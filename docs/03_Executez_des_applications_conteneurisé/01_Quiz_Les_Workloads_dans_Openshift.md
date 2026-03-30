@@ -1,15 +1,34 @@
-# Quiz : les Workloads dans Openshift
+# Quiz — Les Workloads dans OpenShift
 
-Nous allons maintenant faire un quiz pour évaluer votre compréhension de la partie "Les Workloads dans Openshift". Ce quiz couvrira les concepts fondamentaux abordés, tels que les conteneurs, Kubernetes et les spécificités d'OpenShift.
-
-Pour joindre le quiz, veuillez suivre les étapes suivantes :
-
-1. Ouvrez l'application Quizizz sur votre appareil ou rendez-vous sur : [https://quizizz.com/join](https://quizizz.com/join).
-
-2. Entrez le numéro fourni par l'instructeur pour accéder au quiz.
-
-![container stack](./images/quizizz.svg)
+Il est temps de tester vos connaissances sur les Workloads dans OpenShift !
 
 ---
 
-Bonne chance à tous !
+## Comment participer
+
+1. Rendez-vous sur **[https://rahoot.apps.neutron-sno-office.neutron-it.fr](https://rahoot.apps.neutron-sno-office.neutron-it.fr)**
+2. Entrez le **code de la salle** communiqué par votre formateur
+3. Choisissez un pseudo et attendez le lancement du quiz
+
+:::info Pour le formateur
+- Accédez à [https://rahoot.apps.neutron-sno-office.neutron-it.fr/manager](https://rahoot.apps.neutron-sno-office.neutron-it.fr/manager)
+- Mot de passe : `formation-openshift`
+- Sélectionnez le quiz **"Les Workloads dans OpenShift"** et lancez la partie
+- Communiquez le code de la salle aux participants
+:::
+
+---
+
+## Thèmes abordés
+
+Ce quiz couvre les concepts vus dans le chapitre **Les Workloads dans OpenShift** :
+
+- Deployment, ReplicaSet, DaemonSet, StatefulSet
+- Job et CronJob
+- Stratégies de déploiement (RollingUpdate, Recreate)
+- Labels et sélecteurs
+- Scaling manuel
+
+---
+
+Bonne chance !

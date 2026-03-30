@@ -52,9 +52,20 @@ const config = {
         items: [
           {
             type: "docSidebar",
-            sidebarId: "tutorialSidebar",
+            sidebarId: "formationSidebar",
             position: "left",
-            label: "Cours",
+            label: "Formation complète",
+          },
+          {
+            type: "docSidebar",
+            sidebarId: "exercicesSidebar",
+            position: "left",
+            label: "Exercices",
+          },
+          {
+            href: "https://rahoot.apps.neutron-sno-office.neutron-it.fr",
+            label: "Quiz Rahoot",
+            position: "left",
           },
           {
             href: "https://github.com/neutron-IT-organization/formation-openshift-1",
