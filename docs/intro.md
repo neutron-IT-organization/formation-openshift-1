@@ -1,3 +1,8 @@
+---
+slug: /
+sidebar_position: 1
+---
+
 # Bienvenue dans la Formation OpenShift : Exploitation d'un cluster Openshift
 
 Bienvenue dans notre formation complète OpenShift ! Ce cours est conçu pour vous fournir une compréhension approfondie de cette plateforme de gestion des conteneurs et de déploiement d'applications modernes. Que vous soyez un débutant curieux ou un professionnel cherchant à approfondir ses compétences, ce cours est structuré pour répondre à vos besoins.

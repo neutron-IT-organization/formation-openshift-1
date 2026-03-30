@@ -116,11 +116,6 @@ const sidebars = {
   // Exercices uniquement — accès rapide aux travaux pratiques
   exercicesSidebar: [
     {
-      type: 'doc',
-      id: 'intro',
-      label: 'Accueil',
-    },
-    {
       type: 'category',
       label: 'Exercices guidés',
       collapsed: false,
