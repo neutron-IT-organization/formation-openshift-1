@@ -14,8 +14,6 @@ Il existe deux mécanismes principaux pour cela :
 
 Imaginez les **Taints** (taches) comme une étiquette "Attention" sur un nœud. Un pod ne peut pas aller sur ce nœud **sauf s'il possède une Toleration** (tolérance) correspondante.
 
-![Taints and Tolerations Concept](/img/concepts/taints-tolerations.png)
-
 ### Les trois effets d'une Taint :
 - **NoSchedule** : le scheduler ne placera aucun pod sur le nœud s'il ne tolère pas la taint.
 - **PreferNoSchedule** : le scheduler essaiera d'éviter le nœud, mais l'utilisera s'il n'y a pas d'autre choix.
@@ -31,8 +29,6 @@ Imaginez les **Taints** (taches) comme une étiquette "Attention" sur un nœud. 
 ## 2. Affinité des Nœuds (Node Affinity)
 
 L'**Affinité** est l'inverse de la Taint : c'est le pod qui demande à aller sur un nœud particulier en fonction de ses **labels**.
-
-![Node Affinity Concept](/img/concepts/node-affinity.png)
 
 ### Deux types d'affinité :
 - **RequiredDuringSchedulingIgnoredDuringExecution** : Le pod **nécessite** absolument que le nœud réponde aux critères (Hard rule). Sinon, le pod reste en état `Pending`.
