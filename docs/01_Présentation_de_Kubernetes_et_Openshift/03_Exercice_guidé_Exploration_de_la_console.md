@@ -24,10 +24,6 @@ A la fin de cet exercice, vous serez capable de :
 
 ---
 
-![Déroulement](./images/exercise-flow-console.svg)
-
----
-
 ## Étape 1 : Accéder à la console web
 
 **Pourquoi ?** La console web est l'interface graphique d'OpenShift. Elle permet de gérer vos applications et vos ressources Kubernetes sans avoir besoin d'utiliser la ligne de commande. C'est le point d'entrée principal pour les développeurs et les administrateurs.
