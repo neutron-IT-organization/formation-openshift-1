@@ -1,4 +1,4 @@
-# Quiz — Les Workloads dans OpenShift
+# Quiz - Les Workloads dans OpenShift
 
 Il est temps de tester vos connaissances sur les Workloads dans OpenShift !
 

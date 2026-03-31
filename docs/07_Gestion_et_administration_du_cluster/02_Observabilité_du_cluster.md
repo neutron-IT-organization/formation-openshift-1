@@ -65,7 +65,7 @@ La séparation entre le monitoring de la plateforme et celui des workloads utili
 
 La console OpenShift expose une interface dédiée à l'observabilité sous la section **Observe** du menu latéral.
 
-![Console OpenShift — Observe > Dashboards](./images/console-monitoring.svg)
+![Console OpenShift - Observe > Dashboards](./images/console-monitoring.svg)
 
 *Vue "Dashboards" dans la console OpenShift : le tableau de bord "Kubernetes / Compute Resources / Namespace" affiche l'utilisation CPU, mémoire et le nombre de pods pour un namespace sélectionné.*
 
@@ -199,7 +199,7 @@ spec:
             name: slack-webhook-secret
             key: url
           channel: '#openshift-alerts'
-          title: 'Alerte OpenShift — {{ .GroupLabels.alertname }}'
+          title: 'Alerte OpenShift - {{ .GroupLabels.alertname }}'
           text: 'Namespace: {{ .GroupLabels.namespace }}'
 ```
 

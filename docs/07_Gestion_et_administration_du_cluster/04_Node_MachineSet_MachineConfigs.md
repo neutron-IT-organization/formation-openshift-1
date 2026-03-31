@@ -39,7 +39,7 @@ Un nœud OpenShift exécute plusieurs composants essentiels :
 | Composant | Rôle |
 |-----------|------|
 | **CRI-O** | Runtime de conteneurs (remplace Docker dans OpenShift 4) |
-| **kubelet** | Agent Kubernetes local — gère le cycle de vie des pods |
+| **kubelet** | Agent Kubernetes local - gère le cycle de vie des pods |
 | **kube-proxy** | Gestion des règles réseau iptables/nftables |
 | **OVN-Kubernetes** | Plugin réseau SDN (Software Defined Networking) |
 

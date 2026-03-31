@@ -2,7 +2,7 @@
 
 ## Objectif
 
-Cette section pose les fondations conceptuelles de la formation. Avant de manipuler OpenShift, il est essentiel de comprendre pourquoi les conteneurs ont émergé, comment Kubernetes les orchestre, et ce qu'OpenShift apporte par rapport à Kubernetes nu. Ces trois niveaux — conteneur, orchestrateur, plateforme — forment une pile cohérente que vous allez maîtriser tout au long de la formation.
+Cette section pose les fondations conceptuelles de la formation. Avant de manipuler OpenShift, il est essentiel de comprendre pourquoi les conteneurs ont émergé, comment Kubernetes les orchestre, et ce qu'OpenShift apporte par rapport à Kubernetes nu. Ces trois niveaux - conteneur, orchestrateur, plateforme - forment une pile cohérente que vous allez maîtriser tout au long de la formation.
 
 :::info Structure de cette section
 Cette section est divisée en trois parties progressives :
@@ -13,7 +13,7 @@ Cette section est divisée en trois parties progressives :
 
 ---
 
-## Partie 1 — Comprendre les conteneurs
+## Partie 1 - Comprendre les conteneurs
 
 ### Qu'est-ce qu'un conteneur ?
 
@@ -27,7 +27,7 @@ Le résultat est une unité portable, reproductible et rapide à démarrer, qui 
 |---------|-----------------|----------------------|-----------|
 | Isolation | Aucune | Système d'exploitation complet | Processus isolés (namespaces Linux) |
 | Démarrage | Minutes | 30 secondes à 2 minutes | Secondes |
-| Taille | — | Plusieurs Go (OS inclus) | Quelques Mo à centaines de Mo |
+| Taille | - | Plusieurs Go (OS inclus) | Quelques Mo à centaines de Mo |
 | Partage du noyau OS | Oui | Non (chaque VM a son propre noyau) | Oui |
 | Portabilité | Faible | Moyenne (dépend de l'hyperviseur) | Haute (image standardisée OCI) |
 | Densité sur un hôte | 1 | Dizaines | Centaines |
@@ -80,7 +80,7 @@ Les conteneurs sont excellents pour packager et isoler des applications. En reva
 
 ---
 
-## Partie 2 — Introduction à Kubernetes
+## Partie 2 - Introduction à Kubernetes
 
 ### Qu'est-ce que Kubernetes ?
 
@@ -137,7 +137,7 @@ Kubernetes surveille en permanence l'état réel du cluster et le compare à l'�
 
 ---
 
-## Partie 3 — OpenShift
+## Partie 3 - OpenShift
 
 ### Qu'est-ce qu'OpenShift ?
 
@@ -162,7 +162,7 @@ OpenShift n'est pas un fork de Kubernetes : il *embarque* Kubernetes (upstream) 
 | Service Mesh | Non | Oui (OpenShift Service Mesh, Istio) |
 | Serverless | Non | Oui (OpenShift Serverless, Knative) |
 
-![La famille OpenShift — couches de la plateforme](./images/slide-openshift-stack.png)
+![La famille OpenShift - couches de la plateforme](./images/slide-openshift-stack.png)
 
 *La famille OpenShift : de l'infrastructure jusqu'aux offres managées, en passant par RHCOS, Kubernetes et OCP*
 
@@ -231,4 +231,4 @@ OpenShift = Kubernetes + sécurité renforcée + outils développeur + console w
 
 Les conteneurs permettent de packager et d'isoler les applications. Kubernetes orchestre ces conteneurs à grande échelle. OpenShift va plus loin en ajoutant les outils, la sécurité et le support nécessaires aux environnements de production d'entreprise.
 
-Cette progression — conteneur → Kubernetes → OpenShift — constitue le fil directeur de l'ensemble de cette formation. Dans la section suivante, nous allons explorer l'architecture interne d'un cluster OpenShift pour comprendre comment ces composants s'articulent.
+Cette progression - conteneur → Kubernetes → OpenShift - constitue le fil directeur de l'ensemble de cette formation. Dans la section suivante, nous allons explorer l'architecture interne d'un cluster OpenShift pour comprendre comment ces composants s'articulent.

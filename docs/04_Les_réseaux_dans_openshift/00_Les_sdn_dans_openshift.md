@@ -1,6 +1,6 @@
 # Les réseaux dans OpenShift
 
-Dans un environnement OpenShift, la gestion du réseau est essentielle pour garantir une communication efficace et sécurisée entre les différents composants des applications déployées. Kubernetes implémente un **Réseau Défini par Logiciel** (SDN — Software Defined Networking) pour orchestrer cette infrastructure réseau. Le SDN permet de créer un réseau virtuel englobant tous les nœuds du cluster, facilitant la communication inter-pods tout en maintenant un niveau élevé de sécurité et de gestion centralisée.
+Dans un environnement OpenShift, la gestion du réseau est essentielle pour garantir une communication efficace et sécurisée entre les différents composants des applications déployées. Kubernetes implémente un **Réseau Défini par Logiciel** (SDN - Software Defined Networking) pour orchestrer cette infrastructure réseau. Le SDN permet de créer un réseau virtuel englobant tous les nœuds du cluster, facilitant la communication inter-pods tout en maintenant un niveau élevé de sécurité et de gestion centralisée.
 
 ![Vue d'ensemble du SDN OpenShift](./images/sdn.svg)
 
@@ -46,8 +46,8 @@ Les conteneurs appartenant au **même pod** partagent le même espace réseau (n
 
 ```
 Pod A
-├── conteneur-app   → localhost:8080
-└── conteneur-sidecar → localhost:9090
+├ conteneur-app   → localhost:8080
+└ conteneur-sidecar → localhost:9090
 ```
 
 Ce modèle est celui utilisé par les sidecars (Istio Envoy proxy, Fluent Bit, etc.).
@@ -95,7 +95,7 @@ La **Container Network Interface** (CNI) est une spécification standardisée qu
 
 ### L'Opérateur de Réseau de Clusters (CNO)
 
-L'**Opérateur de Réseau de Clusters** (Cluster Network Operator — CNO) est l'opérateur OpenShift responsable du déploiement et de la configuration du plugin CNI. Il gère :
+L'**Opérateur de Réseau de Clusters** (Cluster Network Operator - CNO) est l'opérateur OpenShift responsable du déploiement et de la configuration du plugin CNI. Il gère :
 
 - Le déploiement des DaemonSets CNI sur tous les nœuds.
 - La configuration initiale du réseau de pods (CIDR, MTU, etc.).
@@ -121,22 +121,22 @@ oc get network.operator cluster -o yaml
 ### Architecture OVN-Kubernetes
 
 ```
-┌─────────────────────────────────────────────┐
+┌┐
 │              Plan de contrôle               │
-│  ┌──────────────────────────────────────┐   │
+│  ┌┐   │
 │  │     ovn-kubernetes (controller)      │   │
 │  │  - Traduit les objets K8s en règles  │   │
 │  │  - Gère les NetworkPolicies          │   │
-│  └──────────────┬───────────────────────┘   │
-└─────────────────┼───────────────────────────┘
+│  └┬┘   │
+└┼┘
                   │ OVN Northbound DB
-        ┌─────────┴──────────┐
+        ┌┴┐
         ▼                    ▼
-┌──────────────┐    ┌──────────────┐
+┌┐    ┌┐
 │    Nœud 1    │    │    Nœud 2    │
 │  OVS + OVN   │    │  OVS + OVN   │
 │  southbound  │    │  southbound  │
-└──────────────┘    └──────────────┘
+└┘    └┘
 ```
 
 ### Fonctionnalités clés d'OVN-Kubernetes
@@ -157,7 +157,7 @@ OpenShift supporte plusieurs plugins CNI. Le tableau suivant synthétise leurs c
 
 ![Plugins CNI supportés par OpenShift](./images/slide-cni-plugins.png)
 
-*Vue d'ensemble des plugins CNI disponibles — OVN-Kubernetes est le défaut depuis OpenShift 4.12*
+*Vue d'ensemble des plugins CNI disponibles - OVN-Kubernetes est le défaut depuis OpenShift 4.12*
 
 | Critère | OVN-Kubernetes | OpenShift SDN | Calico | Cilium |
 |---|---|---|---|---|

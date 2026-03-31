@@ -1,4 +1,4 @@
-# Quiz — Les réseaux dans OpenShift
+# Quiz - Les réseaux dans OpenShift
 
 Il est temps de tester vos connaissances sur les réseaux dans OpenShift !
 

@@ -24,10 +24,10 @@ Les **Deployments** et les **DaemonSets** sont les deux workloads les plus fréq
 Un **Deployment** est un objet déclaratif qui délègue la gestion des pods à une chaîne de contrôleurs. Lorsque vous créez ou modifiez un Deployment, le contrôleur de déploiement crée un nouveau **ReplicaSet**, qui prend en charge la création et le maintien des **pods**.
 
 ```
-Deployment  ──(gère)──►  ReplicaSet (actif)   ──(crée)──►  Pod-1
-                                                          ──►  Pod-2
-                                                          ──►  Pod-3
-            ──(conserve)──►  ReplicaSet (précédent, 0 replicas)
+Deployment  (gère)►  ReplicaSet (actif)   (crée)►  Pod-1
+                                                          ►  Pod-2
+                                                          ►  Pod-3
+            (conserve)►  ReplicaSet (précédent, 0 replicas)
 ```
 
 Cette architecture en deux niveaux est ce qui rend les rollbacks instantanés : il suffit de réactiver un ReplicaSet précédent.
@@ -343,7 +343,7 @@ spec:
 ```
 
 :::warning Accès au système de fichiers hôte
-Les DaemonSets d'agents de logs utilisent des volumes `hostPath` pour lire les logs du nœud. Dans OpenShift, cet accès est soumis aux politiques de sécurité (SCC — Security Context Constraints). Assurez-vous que le ServiceAccount du DaemonSet dispose des permissions appropriées.
+Les DaemonSets d'agents de logs utilisent des volumes `hostPath` pour lire les logs du nœud. Dans OpenShift, cet accès est soumis aux politiques de sécurité (SCC - Security Context Constraints). Assurez-vous que le ServiceAccount du DaemonSet dispose des permissions appropriées.
 :::
 
 ---

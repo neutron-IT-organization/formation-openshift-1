@@ -51,7 +51,7 @@ Admin                          Développeur / Application
 
 ### Provisionnement dynamique
 
-Dans ce mode — recommandé pour les environnements cloud et OpenShift — la StorageClass décrit comment créer un volume à la demande. Lorsqu'un PVC est créé, le provisioner est appelé automatiquement et un PV est créé en temps réel.
+Dans ce mode - recommandé pour les environnements cloud et OpenShift - la StorageClass décrit comment créer un volume à la demande. Lorsqu'un PVC est créé, le provisioner est appelé automatiquement et un PV est créé en temps réel.
 
 ```
 Développeur / Application                    Infrastructure

@@ -4,7 +4,7 @@
 
 Dans OpenShift, toute application déployée en production a besoin de deux catégories d'informations exogènes à son image : des **paramètres de configuration** (URL d'un service tiers, niveau de log, nombre de threads…) et des **données sensibles** (mots de passe, clés API, certificats TLS). Embarquer ces informations directement dans l'image Docker serait une erreur grave : cela empêche de réutiliser la même image dans plusieurs environnements et expose les secrets dans les registres d'images.
 
-Kubernetes — et par extension OpenShift — résout ce problème avec deux objets distincts :
+Kubernetes - et par extension OpenShift - résout ce problème avec deux objets distincts :
 
 - Les **ConfigMaps** : pour toutes les données de configuration non sensibles.
 - Les **Secrets** : pour les données confidentielles qui exigent un niveau de protection supplémentaire.

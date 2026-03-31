@@ -58,7 +58,7 @@ OpenShift utilise un système de **canaux** (channels) pour segmenter les mises 
 | `stable-4.x` | Haute | Production | Versions ayant passé tous les tests de qualité Red Hat et un délai de validation en conditions réelles |
 | `fast-4.x` | Bonne | Pre-production | Versions disponibles peu après leur sortie, avant le délai de validation du canal stable |
 | `candidate-4.x` | Variable | Test / Validation | Release candidates en cours de qualification, non destinées à la production |
-| `eus-4.x` | Haute | Production LTS | Extended Update Support — versions avec un cycle de support étendu (recommandées pour les clusters à faible fréquence de mise à jour) |
+| `eus-4.x` | Haute | Production LTS | Extended Update Support - versions avec un cycle de support étendu (recommandées pour les clusters à faible fréquence de mise à jour) |
 
 :::tip Canal recommandé en production
 Pour les environnements de production, utilisez toujours le canal **`stable-4.x`**. Il offre la meilleure garantie de stabilité car les versions y arrivent après une période d'observation sur le canal `fast`.
@@ -86,24 +86,24 @@ oc get clusterversion -o jsonpath='{.items[0].spec.channel}'
 
 Une mise à jour OpenShift suit un déroulement en plusieurs phases bien définies :
 
-### Phase 1 — Vérification et préparation
+### Phase 1 - Vérification et préparation
 
 1. Le CVO télécharge le manifeste de la nouvelle version depuis le Cincinnati Graph API.
 2. Il vérifie que le chemin de mise à jour est valide (certaines versions ne peuvent pas être atteintes directement).
 3. Il vérifie que tous les ClusterOperators sont dans un état `Available` avant de démarrer.
 
-### Phase 2 — Mise à jour du plan de contrôle
+### Phase 2 - Mise à jour du plan de contrôle
 
 4. Le CVO met à jour les composants critiques du plan de contrôle (API Server, etcd, Controller Manager, Scheduler).
 5. Chaque ClusterOperator est mis à jour séquentiellement. Si l'un d'eux échoue, le processus se met en pause.
 
-### Phase 3 — Mise à jour des nœuds workers
+### Phase 3 - Mise à jour des nœuds workers
 
 6. Le **Machine Config Operator** applique la nouvelle configuration CoreOS sur les nœuds workers, un par un (rolling update).
 7. Pour chaque nœud : cordon → drain des pods → redémarrage → uncordon.
 8. Le scheduler Kubernetes replace les pods évacués sur les autres nœuds disponibles.
 
-### Phase 4 — Validation
+### Phase 4 - Validation
 
 9. Le CVO vérifie que tous les nœuds sont dans l'état `Ready` et que tous les ClusterOperators sont `Available`.
 10. La mise à jour est marquée comme terminée avec la nouvelle version.

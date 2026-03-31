@@ -44,7 +44,7 @@ resources:
 
 Une *limit* fixe la quantité maximale de ressources qu'un conteneur est autorisé à consommer. Les comportements en cas de dépassement diffèrent selon la ressource :
 
-- **CPU** : le conteneur est *throttlé* (ralenti) — il ne peut pas obtenir plus de cycles CPU que la limite, mais il n'est pas tué.
+- **CPU** : le conteneur est *throttlé* (ralenti) - il ne peut pas obtenir plus de cycles CPU que la limite, mais il n'est pas tué.
 - **Mémoire** : si le conteneur tente d'allouer plus de mémoire que sa limite, il est immédiatement tué par le noyau Linux avec un signal OOMKilled (Out Of Memory), et Kubernetes le redémarre.
 
 ```yaml

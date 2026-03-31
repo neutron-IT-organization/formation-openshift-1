@@ -36,9 +36,9 @@ Dans un cluster de production OpenShift, les nœuds du plan de contrôle et les 
 
 Le plan de contrôle est le cerveau du cluster. Il prend toutes les décisions de gestion : où placer un pod, comment réagir à la défaillance d'un nœud, comment faire évoluer le nombre de réplicas. Il ne fait tourner aucune application utilisateur.
 
-![Plan de contrôle hautement disponible — 3 nœuds masters](./images/slide-control-plane-ha.png)
+![Plan de contrôle hautement disponible - 3 nœuds masters](./images/slide-control-plane-ha.png)
 
-*En production, OpenShift déploie 3 nœuds de contrôle en haute disponibilité — etcd utilise le consensus Raft pour tolérer la perte d'un master*
+*En production, OpenShift déploie 3 nœuds de contrôle en haute disponibilité - etcd utilise le consensus Raft pour tolérer la perte d'un master*
 
 ### Composants Kubernetes du plan de contrôle
 
@@ -51,7 +51,7 @@ Le plan de contrôle est le cerveau du cluster. Il prend toutes les décisions d
 
 #### kube-apiserver en détail
 
-L'API server est le composant le plus central du cluster. Tous les autres composants — y compris `kubectl` et `oc` — interagissent exclusivement avec l'API server. Il ne traite jamais d'état en mémoire : toutes les décisions sont basées sur les données lues depuis etcd.
+L'API server est le composant le plus central du cluster. Tous les autres composants - y compris `kubectl` et `oc` - interagissent exclusivement avec l'API server. Il ne traite jamais d'état en mémoire : toutes les décisions sont basées sur les données lues depuis etcd.
 
 ```shell
 # Toutes ces commandes passent par l'API server
@@ -115,15 +115,15 @@ OpenShift utilise **CRI-O** comme runtime de conteneurs, et non Docker. CRI-O es
 
 ```
 Plan de contrôle                    Nœuds de calcul
-┌─────────────────┐                ┌──────────────────┐
-│  kube-apiserver │◄───── TLS ────►│     kubelet      │
+┌┐                ┌┐
+│  kube-apiserver │◄ TLS ►│     kubelet      │
 │                 │                │  (port 10250)    │
 │  kube-scheduler │                │                  │
 │                 │                │    CRI-O         │
 │  controller-mgr │                │                  │
 │                 │                │  Pods applicatifs│
-│  etcd           │                └──────────────────┘
-└─────────────────┘
+│  etcd           │                └┘
+└┘
 ```
 
 Toute communication entre le plan de contrôle et les nœuds de calcul est chiffrée via TLS. Le kubelet s'authentifie auprès de l'API server avec un certificat client.
@@ -227,21 +227,21 @@ oc debug node/worker-0
 
 OpenShift peut être installé de deux manières principales, selon le niveau de contrôle souhaité sur l'infrastructure sous-jacente.
 
-### IPI — Installer Provisioned Infrastructure
+### IPI - Installer Provisioned Infrastructure
 
 Dans le mode IPI, l'installateur OpenShift crée et gère lui-même toute l'infrastructure (VMs, réseau, stockage) en interagissant avec l'API du fournisseur cloud ou de virtualisation.
 
-![Installation IPI — Installer Provisioned Infrastructure](./images/slide-install-ipi.png)
+![Installation IPI - Installer Provisioned Infrastructure](./images/slide-install-ipi.png)
 
-*IPI : l'installateur crée automatiquement toute l'infrastructure — adapté aux environnements cloud (AWS, Azure, GCP, vSphere)*
+*IPI : l'installateur crée automatiquement toute l'infrastructure - adapté aux environnements cloud (AWS, Azure, GCP, vSphere)*
 
-### UPI — User Provisioned Infrastructure
+### UPI - User Provisioned Infrastructure
 
 Dans le mode UPI, l'opérateur crée et configure manuellement l'infrastructure avant de lancer l'installation d'OpenShift. C'est la méthode utilisée pour les environnements bare-metal ou les infrastructures existantes avec des contraintes réseau spécifiques.
 
-![Installation UPI — User Provisioned Infrastructure](./images/slide-install-upi.png)
+![Installation UPI - User Provisioned Infrastructure](./images/slide-install-upi.png)
 
-*UPI : l'opérateur prépare l'infrastructure en amont — requis pour bare-metal ou réseaux avec contraintes fortes*
+*UPI : l'opérateur prépare l'infrastructure en amont - requis pour bare-metal ou réseaux avec contraintes fortes*
 
 | Critère | IPI | UPI |
 |---------|-----|-----|
@@ -261,22 +261,22 @@ Pour un premier cluster ou un environnement cloud, **IPI** est recommandé. Pour
 
 ```
                     Cluster OpenShift
-┌─────────────────────────────────────────────────────────┐
+┌┐
 │                                                         │
 │  Plan de contrôle (3 nœuds en HA)                      │
-│  ┌──────────┐  ┌──────────┐  ┌─────────────────────┐  │
+│  ┌┐  ┌┐  ┌┐  │
 │  │ etcd     │  │ API      │  │ Scheduler +         │  │
 │  │ (state)  │  │ Server   │  │ Controller Manager  │  │
-│  └──────────┘  └──────────┘  └─────────────────────┘  │
+│  └┘  └┘  └┘  │
 │                                                         │
 │  Nœuds de calcul (N nœuds)                             │
-│  ┌─────────────────────────────────────────────────┐   │
+│  ┌┐   │
 │  │  kubelet  │  CRI-O  │  kube-proxy  │  Pods     │   │
-│  └─────────────────────────────────────────────────┘   │
+│  └┘   │
 │                                                         │
 │  Composants OpenShift (opérateurs)                      │
 │  Router │ Registry │ Monitoring │ OAuth │ MCO │ CVO    │
-└─────────────────────────────────────────────────────────┘
+└┘
 ```
 
 Chaque couche a une responsabilité claire :

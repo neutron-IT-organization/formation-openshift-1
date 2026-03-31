@@ -23,9 +23,9 @@ Avant d'aborder l'automatisation, il est important de comprendre les deux strat�
 
 Dans la grande majorité des cas de production, **le scaling horizontal est privilégié** car il améliore simultanément les performances et la résilience. Une application correctement conçue (stateless, sans affinité de session serveur) bénéficie naturellement de la multiplication des réplicas.
 
-![HPA vs VPA — Comparaison des approches d'autoscaling](./images/slide-hpa-vpa.png)
+![HPA vs VPA - Comparaison des approches d'autoscaling](./images/slide-hpa-vpa.png)
 
-*HPA ajoute des réplicas (copies du pod) — VPA augmente les ressources d'un pod existant*
+*HPA ajoute des réplicas (copies du pod) - VPA augmente les ressources d'un pod existant*
 
 ---
 
@@ -52,7 +52,7 @@ ceil(3 × (90 / 70)) = ceil(3.857) = 4 réplicas
 ```
 
 :::info Prérequis : metrics-server
-Le HPA nécessite que le composant `metrics-server` soit actif dans le cluster pour collecter les métriques de CPU et mémoire des pods. Dans OpenShift 4, ce composant est inclus dans la plateforme via le sous-système OpenShift Monitoring et est actif par défaut — aucune installation supplémentaire n'est nécessaire. Pour vérifier son état : `oc get pods -n openshift-monitoring | grep metrics-server`
+Le HPA nécessite que le composant `metrics-server` soit actif dans le cluster pour collecter les métriques de CPU et mémoire des pods. Dans OpenShift 4, ce composant est inclus dans la plateforme via le sous-système OpenShift Monitoring et est actif par défaut - aucune installation supplémentaire n'est nécessaire. Pour vérifier son état : `oc get pods -n openshift-monitoring | grep metrics-server`
 :::
 
 ### Types de métriques supportées
@@ -182,7 +182,7 @@ oc apply -f welcome-app-hpa.yaml
 ```
 
 :::tip Valeurs de cible CPU recommandées
-Une cible de 70% d'utilisation CPU est généralement un bon compromis : elle laisse suffisamment de marge pour absorber les pics entre deux cycles d'évaluation (15 secondes) tout en maintenant les pods suffisamment chargés pour éviter un sur-provisionnement. Évitez des cibles supérieures à 90% car le HPA ne peut pas réagir instantanément — il y aura toujours un délai entre la montée en charge et l'arrivée des nouveaux pods.
+Une cible de 70% d'utilisation CPU est généralement un bon compromis : elle laisse suffisamment de marge pour absorber les pics entre deux cycles d'évaluation (15 secondes) tout en maintenant les pods suffisamment chargés pour éviter un sur-provisionnement. Évitez des cibles supérieures à 90% car le HPA ne peut pas réagir instantanément - il y aura toujours un délai entre la montée en charge et l'arrivée des nouveaux pods.
 :::
 
 ---
@@ -250,7 +250,7 @@ Lorsqu'un HPA réduit le nombre de réplicas (scale down) en même temps qu'un r
 | **KEDA** | Horizontal (piloté par événements) | Files de messages, bases de données, HTTP, cron | Traitements asynchrones, workers de queue, scale-to-zero |
 
 :::note KEDA dans OpenShift
-KEDA (Kubernetes Event-driven Autoscaling) est disponible en tant qu'opérateur dans le catalogue OperatorHub d'OpenShift. Il étend le HPA natif pour supporter des dizaines de sources de métriques externes (Kafka, RabbitMQ, AWS SQS, Prometheus, etc.) et permet notamment le **scale-to-zero** — une capacité que le HPA natif ne supporte pas (minimum 1 réplica).
+KEDA (Kubernetes Event-driven Autoscaling) est disponible en tant qu'opérateur dans le catalogue OperatorHub d'OpenShift. Il étend le HPA natif pour supporter des dizaines de sources de métriques externes (Kafka, RabbitMQ, AWS SQS, Prometheus, etc.) et permet notamment le **scale-to-zero** - une capacité que le HPA natif ne supporte pas (minimum 1 réplica).
 :::
 
 ---

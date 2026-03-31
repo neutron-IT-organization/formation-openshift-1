@@ -77,7 +77,7 @@ Ajoutez **2 ou 3 tâches** dans l'interface (par exemple : "Acheter du pain", "L
 
 Avant de résoudre un problème, il faut le **voir** de ses propres yeux. Vous allez constater ce qui se passe quand une base de données utilise un volume `emptyDir` et que son pod est supprimé.
 
-### 1.1 — Vérifier le type de volume actuel
+### 1.1 - Vérifier le type de volume actuel
 
 Commencez par inspecter la configuration des volumes du déploiement PostgreSQL :
 
@@ -100,13 +100,13 @@ oc get deployment postgres -o jsonpath='{.spec.template.spec.volumes}' | python3
 Un volume `emptyDir` est un répertoire **vide** créé en même temps que le pod. Il existe uniquement **tant que le pod existe**. Dès que le pod est supprimé, le répertoire et tout son contenu sont **définitivement supprimés**.
 :::
 
-### 1.2 — Ajouter des tâches dans l'application
+### 1.2 - Ajouter des tâches dans l'application
 
 Si ce n'est pas déjà fait, ouvrez la Todo App dans votre navigateur et ajoutez quelques tâches. Vous devriez voir quelque chose comme ceci :
 
 ![Tâches ajoutées](./images/task-ephemere.png)
 
-### 1.3 — Supprimer le pod PostgreSQL
+### 1.3 - Supprimer le pod PostgreSQL
 
 Maintenant, supprimez le pod PostgreSQL pour simuler un redémarrage :
 
@@ -121,7 +121,7 @@ pod "postgres-xxxxxxxxx-xxxxx" deleted
 ```
 
 :::warning Que se passe-t-il en arrière-plan ?
-Quand vous supprimez un pod géré par un Deployment, Kubernetes en **recrée automatiquement un nouveau**. Mais le nouveau pod démarre avec un volume `emptyDir` **vide** — toutes les données de l'ancien pod sont perdues.
+Quand vous supprimez un pod géré par un Deployment, Kubernetes en **recrée automatiquement un nouveau**. Mais le nouveau pod démarre avec un volume `emptyDir` **vide** - toutes les données de l'ancien pod sont perdues.
 :::
 
 Attendez que le nouveau pod soit prêt :
@@ -139,7 +139,7 @@ postgres-xxxxxxxxx-yyyyy    1/1     Running   0          15s
 
 Appuyez sur `Ctrl+C` pour quitter le mode watch une fois que le pod est `Running`.
 
-### 1.4 — Constater la perte de données
+### 1.4 - Constater la perte de données
 
 Retournez dans votre navigateur et **rafraîchissez la page** de la Todo App.
 
@@ -174,10 +174,10 @@ Pour que les données survivent à la suppression d'un pod, nous avons besoin d'
 1. Vous créez un **PVC** : c'est une **demande** de stockage (par exemple : "je veux 1 Go en lecture-écriture")
 2. Le cluster trouve ou crée un **PV** (Persistent Volume) qui correspond à cette demande
 3. Le PVC est **lié** (Bound) au PV
-4. Vous montez le PVC dans votre pod — le stockage persiste même si le pod est supprimé
+4. Vous montez le PVC dans votre pod - le stockage persiste même si le pod est supprimé
 :::
 
-### 2.1 — Créer le fichier PVC
+### 2.1 - Créer le fichier PVC
 
 Créez un fichier nommé `postgres-pvc.yaml` avec le contenu suivant :
 
@@ -200,7 +200,7 @@ spec:
 - Nous ne spécifions pas de `storageClassName` : le cluster utilisera la **Storage Class par défaut**.
 :::
 
-### 2.2 — Appliquer le PVC
+### 2.2 - Appliquer le PVC
 
 ```bash
 oc apply -f postgres-pvc.yaml
@@ -212,7 +212,7 @@ oc apply -f postgres-pvc.yaml
 ![PVC List](/img/screenshots/admin_pvcs_list.png)
 ```
 
-### 2.3 — Vérifier que le PVC est lié
+### 2.3 - Vérifier que le PVC est lié
 
 ```bash
 oc get pvc postgres-pvc
@@ -245,7 +245,7 @@ Avant de passer à la suite, assurez-vous que :
 
 Le PVC existe maintenant, mais PostgreSQL ne l'utilise pas encore. Nous devons modifier le déploiement pour **remplacer** le volume `emptyDir` par notre PVC.
 
-### 3.1 — Créer le fichier de déploiement modifié
+### 3.1 - Créer le fichier de déploiement modifié
 
 Créez un fichier `postgres-pvc-deployment.yaml` avec le contenu suivant :
 
@@ -313,7 +313,7 @@ volumes:
 Tout le reste (container, ports, variables d'environnement, volumeMounts) est **identique**.
 :::
 
-### 3.2 — Appliquer le nouveau déploiement
+### 3.2 - Appliquer le nouveau déploiement
 
 ```bash
 oc apply -f postgres-pvc-deployment.yaml
@@ -329,7 +329,7 @@ deployment.apps/postgres configured
 Le message dit `configured` car le déploiement `postgres` existait déjà. Kubernetes a **mis à jour** la configuration existante au lieu d'en créer une nouvelle.
 :::
 
-### 3.3 — Attendre que le nouveau pod soit prêt
+### 3.3 - Attendre que le nouveau pod soit prêt
 
 ```bash
 oc rollout status deployment/postgres
@@ -354,7 +354,7 @@ NAME                        READY   STATUS    RESTARTS   AGE
 postgres-xxxxxxxxx-zzzzz    1/1     Running   0          30s
 ```
 
-### 3.4 — Vérifier que le PVC est bien utilisé
+### 3.4 - Vérifier que le PVC est bien utilisé
 
 ```bash
 oc get deployment postgres -o jsonpath='{.spec.template.spec.volumes}' | python3 -m json.tool
@@ -394,13 +394,13 @@ Avant de passer à la suite, assurez-vous que :
 
 C'est le moment de vérité. Nous allons reproduire exactement le même scénario que l'étape 1 (ajouter des tâches, supprimer le pod) et vérifier que cette fois-ci, **les données sont conservées**.
 
-### 4.1 — Ajouter de nouvelles tâches
+### 4.1 - Ajouter de nouvelles tâches
 
 Ouvrez la Todo App dans votre navigateur et ajoutez de nouvelles tâches (par exemple : "Apprendre les PVC", "Maîtriser OpenShift").
 
 ![Tâches ajoutées avec PVC](./images/task-permanente.png)
 
-### 4.2 — Supprimer le pod PostgreSQL
+### 4.2 - Supprimer le pod PostgreSQL
 
 Comme à l'étape 1, supprimez le pod :
 
@@ -414,7 +414,7 @@ oc delete pod -l app=postgres
 pod "postgres-xxxxxxxxx-zzzzz" deleted
 ```
 
-### 4.3 — Attendre la recréation du pod
+### 4.3 - Attendre la recréation du pod
 
 ```bash
 oc get pods -l app=postgres -w
@@ -429,7 +429,7 @@ postgres-xxxxxxxxx-aaaaa    1/1     Running   0          10s
 
 Appuyez sur `Ctrl+C` pour quitter le mode watch.
 
-### 4.4 — Vérifier que les données sont toujours là
+### 4.4 - Vérifier que les données sont toujours là
 
 Retournez dans votre navigateur et **rafraîchissez la page**.
 
@@ -455,7 +455,7 @@ Avant de passer à la suite, assurez-vous que :
 
 Maintenant que le PVC fonctionne, prenons un moment pour comprendre **comment** le cluster a satisfait notre demande de stockage.
 
-### 5.1 — Détails du PVC
+### 5.1 - Détails du PVC
 
 ```bash
 oc describe pvc postgres-pvc
@@ -478,14 +478,14 @@ Events:
 ```
 
 :::info Lecture des détails
-- **Status: Bound** — Le PVC est lié à un PV, tout va bien
-- **Volume** — L'identifiant du PV qui a été créé automatiquement
-- **Capacity: 1Gi** — Le stockage alloué correspond à notre demande
-- **Access Modes: RWO** — ReadWriteOnce, comme demandé
-- **StorageClass: thin-csi** — La classe de stockage utilisée (celle par défaut du cluster)
+- **Status: Bound** - Le PVC est lié à un PV, tout va bien
+- **Volume** - L'identifiant du PV qui a été créé automatiquement
+- **Capacity: 1Gi** - Le stockage alloué correspond à notre demande
+- **Access Modes: RWO** - ReadWriteOnce, comme demandé
+- **StorageClass: thin-csi** - La classe de stockage utilisée (celle par défaut du cluster)
 :::
 
-### 5.2 — Lister les Storage Classes
+### 5.2 - Lister les Storage Classes
 
 ```bash
 oc get storageclass
@@ -504,7 +504,7 @@ thin-csi (default)   csi.vsphere.vmware.com         Delete          Immediate   
 La Storage Class marquée `(default)` est utilisée automatiquement quand vous ne spécifiez pas de `storageClassName` dans votre PVC. C'est pour cela que notre PVC a fonctionné sans préciser de classe de stockage.
 :::
 
-### 5.3 — Voir le PV associé
+### 5.3 - Voir le PV associé
 
 ```bash
 oc get pv | grep postgres-pvc
@@ -517,7 +517,7 @@ pvc-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx   1Gi   RWO   Delete   Bound   votre-na
 ```
 
 :::info Approvisionnement dynamique
-Le PV a été créé **automatiquement** par la Storage Class. C'est ce qu'on appelle l'**approvisionnement dynamique** (dynamic provisioning). Vous n'avez pas eu besoin de demander à un administrateur de créer un PV manuellement — la Storage Class s'en est chargée.
+Le PV a été créé **automatiquement** par la Storage Class. C'est ce qu'on appelle l'**approvisionnement dynamique** (dynamic provisioning). Vous n'avez pas eu besoin de demander à un administrateur de créer un PV manuellement - la Storage Class s'en est chargée.
 :::
 
 ### Vérification de l'étape 5

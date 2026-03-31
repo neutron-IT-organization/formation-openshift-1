@@ -1,4 +1,4 @@
-# Référence rapide — Commandes OpenShift & Kubernetes
+# Référence rapide - Commandes OpenShift & Kubernetes
 
 Toutes les commandes utiles pour naviguer dans le cluster tout au long de la formation.
 
@@ -301,7 +301,7 @@ oc delete hpa <name>
 
 ---
 
-## RBAC — Utilisateurs et Permissions
+## RBAC - Utilisateurs et Permissions
 
 ```bash
 # Lister les utilisateurs (admin seulement)

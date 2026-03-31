@@ -82,20 +82,20 @@ oc project paris
 
 | Période | Contenu |
 |---------|---------|
-| **Jour 1 — Matin** | Introduction, présentation d'OpenShift, architecture, exploration de la console |
-| **Jour 1 — Après-midi** | Déploiement d'applications, gestion des pods, services et routes |
-| **Jour 2 — Matin** | Configuration, secrets, stockage persistant |
-| **Jour 2 — Après-midi** | Disponibilité, autoscaling, mises à jour, bilan et Q&A |
+| **Jour 1 - Matin** | Introduction, présentation d'OpenShift, architecture, exploration de la console |
+| **Jour 1 - Après-midi** | Déploiement d'applications, gestion des pods, services et routes |
+| **Jour 2 - Matin** | Configuration, secrets, stockage persistant |
+| **Jour 2 - Après-midi** | Disponibilité, autoscaling, mises à jour, bilan et Q&A |
 
 ### Schéma pédagogique
 
 Chaque module de la formation suit le même enchaînement :
 
 ```
-1. Théorie       — Présentation par le formateur (slides + explications)
-2. Démonstration — Le formateur réalise la manipulation en direct
-3. Exercice      — Vous reproduisez la manipulation dans votre namespace
-4. Quiz          — Questions rapides pour consolider les acquis
+1. Théorie       - Présentation par le formateur (slides + explications)
+2. Démonstration - Le formateur réalise la manipulation en direct
+3. Exercice      - Vous reproduisez la manipulation dans votre namespace
+4. Quiz          - Questions rapides pour consolider les acquis
 ```
 
 :::note Quiz interactifs

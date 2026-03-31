@@ -1,4 +1,4 @@
-# Quiz — Présentation d'OpenShift
+# Quiz - Présentation d'OpenShift
 
 Il est temps de tester vos connaissances sur la présentation d'OpenShift !
 

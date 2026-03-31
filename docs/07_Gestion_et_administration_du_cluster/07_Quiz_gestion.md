@@ -1,4 +1,4 @@
-# Quiz — Gestion et administration du cluster
+# Quiz - Gestion et administration du cluster
 
 Il est temps de tester vos connaissances sur la gestion et l'administration d'OpenShift !
 

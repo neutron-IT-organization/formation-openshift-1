@@ -148,16 +148,16 @@ Pour les agents système devant couvrir l'ensemble du cluster → **DaemonSet**.
 
 ```
 Deployment
-    └── ReplicaSet (géré automatiquement)
-            └── Pod (0..N réplicas)
+    └ ReplicaSet (géré automatiquement)
+            └ Pod (0..N réplicas)
 
 DaemonSet
-    └── Pod (1 par nœud éligible)
+    └ Pod (1 par nœud éligible)
 
 StatefulSet
-    └── Pod-0 ←→ PVC-0
-    └── Pod-1 ←→ PVC-1
-    └── Pod-N ←→ PVC-N
+    └ Pod-0 ←→ PVC-0
+    └ Pod-1 ←→ PVC-1
+    └ Pod-N ←→ PVC-N
 ```
 
 Un **Deployment** gère un ou plusieurs **ReplicaSets** au fil des mises à jour. À un instant donné, un seul ReplicaSet est actif ; les anciens sont conservés pour permettre les rollbacks. Chaque ReplicaSet gère un ensemble de **Pods** identiques et interchangeables.
@@ -181,6 +181,6 @@ Un **StatefulSet** gère directement ses pods, chacun ayant une identité unique
 
 :::info Pour aller plus loin
 Les sections suivantes de ce module détaillent le fonctionnement et la configuration de chaque type de workload :
-- **Section 02** : Deployments et DaemonSets — stratégies de mise à jour, rolling update, exemples YAML complets
-- **Section 04** : StatefulSets — identité stable, volumeClaimTemplates, cas d'usage avec bases de données
+- **Section 02** : Deployments et DaemonSets - stratégies de mise à jour, rolling update, exemples YAML complets
+- **Section 04** : StatefulSets - identité stable, volumeClaimTemplates, cas d'usage avec bases de données
 :::

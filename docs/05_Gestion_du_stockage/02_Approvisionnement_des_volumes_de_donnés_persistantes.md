@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Dans OpenShift, les conteneurs sont par nature **éphémères** : lorsqu'un Pod est supprimé ou recréé, tous les fichiers écrits dans son système de fichiers sont perdus. C'est le comportement attendu pour les applications sans état (stateless). Mais de nombreuses applications — bases de données, systèmes de fichiers partagés, caches persistants — ont besoin de conserver leurs données au-delà du cycle de vie d'un Pod.
+Dans OpenShift, les conteneurs sont par nature **éphémères** : lorsqu'un Pod est supprimé ou recréé, tous les fichiers écrits dans son système de fichiers sont perdus. C'est le comportement attendu pour les applications sans état (stateless). Mais de nombreuses applications - bases de données, systèmes de fichiers partagés, caches persistants - ont besoin de conserver leurs données au-delà du cycle de vie d'un Pod.
 
 OpenShift répond à ce besoin via deux objets complémentaires :
 
@@ -148,7 +148,7 @@ spec:
 
 ### Provisionnement dynamique
 
-Dans le provisionnement dynamique — la méthode recommandée — l'administrateur configure une **StorageClass**. Lorsqu'un PVC est créé, Kubernetes appelle automatiquement le provisioner de la StorageClass pour créer un PV correspondant. Le développeur n'a pas à se soucier des PV.
+Dans le provisionnement dynamique - la méthode recommandée - l'administrateur configure une **StorageClass**. Lorsqu'un PVC est créé, Kubernetes appelle automatiquement le provisioner de la StorageClass pour créer un PV correspondant. Le développeur n'a pas à se soucier des PV.
 
 ### Politique de reclamation (Reclaim Policy)
 
@@ -323,7 +323,7 @@ spec:
             storage: 5Gi
 ```
 
-Cela crée automatiquement `data-app-stateful-0`, `data-app-stateful-1`, `data-app-stateful-2` — un PVC par réplica.
+Cela crée automatiquement `data-app-stateful-0`, `data-app-stateful-1`, `data-app-stateful-2` - un PVC par réplica.
 
 ---
 

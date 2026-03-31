@@ -1,4 +1,4 @@
-# Quiz — Architecture OpenShift et Kubernetes
+# Quiz - Architecture OpenShift et Kubernetes
 
 Il est temps de tester vos connaissances sur l'architecture d'OpenShift et Kubernetes !
 

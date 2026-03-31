@@ -141,9 +141,9 @@ Utilisez ClusterIP pour **tout service interne** : bases de données, APIs backe
 Le type **NodePort** étend ClusterIP en ouvrant un port sur **chaque nœud** du cluster (dans la plage 30000-32767). Le trafic arrivant sur `<IP-nœud>:<nodePort>` est redirigé vers le Service, puis réparti entre les pods.
 
 ```
-Client externe → IP nœud 1:30007 ─┐
-                                    ├─→ Service ClusterIP → Pods
-Client externe → IP nœud 2:30007 ─┘
+Client externe → IP nœud 1:30007 ┐
+                                    ├→ Service ClusterIP → Pods
+Client externe → IP nœud 2:30007 ┘
 ```
 
 #### Exemple de configuration
@@ -252,7 +252,7 @@ La console OpenShift Administrator permet d'inspecter et de gérer les Services 
 
 ![Vue console OpenShift : Services et Routes](./images/console-services-routes.svg)
 
-*Console OpenShift — perspective Administrator > Networking > Services : liste des services avec leur type, ClusterIP, et ports associés*
+*Console OpenShift - perspective Administrator > Networking > Services : liste des services avec leur type, ClusterIP, et ports associés*
 
 ### Navigation
 
@@ -643,7 +643,7 @@ oc create route edge webapp-custom-tls \
 | **Service NodePort** | Accès externe via port haut (30000-32767), adapté aux tests |
 | **Service LoadBalancer** | IP publique dédiée, adapté au cloud ou MetalLB on-premise |
 | **Route HTTP** | Exposition externe HTTP simple, nom de domaine automatique |
-| **Route TLS Edge** | HTTPS terminé par l'Ingress, pod reçoit HTTP — cas le plus courant |
+| **Route TLS Edge** | HTTPS terminé par l'Ingress, pod reçoit HTTP - cas le plus courant |
 | **Route TLS Re-encrypt** | Chiffrement bout en bout, conformité réglementaire |
 | **Route TLS Passthrough** | Chiffrement géré par le pod, mTLS, protocoles non-HTTP |
 

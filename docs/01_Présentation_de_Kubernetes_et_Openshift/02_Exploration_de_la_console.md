@@ -2,7 +2,7 @@
 
 ## Objectif
 
-La console web d'OpenShift est l'interface graphique principale pour interagir avec votre cluster. Elle permet de gérer les ressources, déployer des applications, surveiller les performances et configurer l'infrastructure — le tout sans quitter votre navigateur. Cette section vous guide à travers les différentes zones de la console et vous prépare à naviguer efficacement dans votre environnement de travail.
+La console web d'OpenShift est l'interface graphique principale pour interagir avec votre cluster. Elle permet de gérer les ressources, déployer des applications, surveiller les performances et configurer l'infrastructure - le tout sans quitter votre navigateur. Cette section vous guide à travers les différentes zones de la console et vous prépare à naviguer efficacement dans votre environnement de travail.
 
 :::info Console web vs ligne de commande
 Toutes les actions réalisables dans la console sont également disponibles via `oc` en ligne de commande. Dans cette formation, nous utiliserons les deux. La console est idéale pour visualiser et explorer ; la ligne de commande est plus efficace pour automatiser et scripter.

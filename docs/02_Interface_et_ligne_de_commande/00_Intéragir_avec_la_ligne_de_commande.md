@@ -57,17 +57,17 @@ Dans un cluster OpenShift, préférez toujours `oc` à `kubectl`. Cela vous donn
 
 Le binaire `oc` est disponible directement depuis la console Web OpenShift, ce qui garantit que vous installez la version correspondant exactement à votre cluster.
 
-**Etape 1 — Accéder à la page de téléchargement**
+**Etape 1 - Accéder à la page de téléchargement**
 
 Connectez-vous à la console Web OpenShift, puis cliquez sur l'icône point d'interrogation en haut à droite et sélectionnez **"Command Line Tools"**.
 
 La page affiche les binaires disponibles pour Linux, macOS et Windows.
 
-**Etape 2 — Télécharger l'archive**
+**Etape 2 - Télécharger l'archive**
 
 Téléchargez l'archive correspondant à votre système d'exploitation.
 
-**Etape 3 — Décompresser l'archive**
+**Etape 3 - Décompresser l'archive**
 
 Sous Linux ou macOS :
 
@@ -77,7 +77,7 @@ tar xvzf openshift-client-linux.tar.gz
 
 Sous Windows, utilisez un outil comme 7-Zip pour extraire le contenu de l'archive `.zip`.
 
-**Etape 4 — Ajouter `oc` au PATH**
+**Etape 4 - Ajouter `oc` au PATH**
 
 Sous Linux ou macOS :
 
@@ -144,7 +144,7 @@ Le port `6443` est le port standard de l'API Kubernetes/OpenShift. Il correspond
 
 Cette méthode est utile lorsque l'authentification par mot de passe est désactivée (SSO, LDAP, etc.) ou que vous souhaitez automatiser la connexion dans un script.
 
-**Etape 1 — Ouvrir le menu utilisateur**
+**Etape 1 - Ouvrir le menu utilisateur**
 
 Dans la console Web OpenShift, cliquez sur votre nom d'utilisateur en haut à droite, puis sélectionnez **"Copy login command"**.
 
@@ -152,11 +152,11 @@ Dans la console Web OpenShift, cliquez sur votre nom d'utilisateur en haut à dr
 
 *La console OpenShift propose une option "Copy login command" dans le menu utilisateur pour récupérer un token d'authentification.*
 
-**Etape 2 — Afficher le token**
+**Etape 2 - Afficher le token**
 
 Une nouvelle page s'ouvre. Cliquez sur **"Display Token"** pour révéler votre token d'authentification ainsi que la commande complète à copier.
 
-**Etape 3 — Exécuter la commande dans le terminal**
+**Etape 3 - Exécuter la commande dans le terminal**
 
 Collez la commande copiée dans votre terminal :
 
@@ -213,7 +213,7 @@ Dans la console OpenShift, cliquez sur l'icône de terminal en haut à droite de
 
 *Le bouton d'accès au terminal web est situé dans la barre de navigation supérieure de la console OpenShift.*
 
-Le terminal s'ouvre dans un panneau en bas de la console. Vous êtes automatiquement authentifié avec votre session en cours — aucune commande `oc login` n'est nécessaire.
+Le terminal s'ouvre dans un panneau en bas de la console. Vous êtes automatiquement authentifié avec votre session en cours - aucune commande `oc login` n'est nécessaire.
 
 ### Ouvrir le terminal dans un nouvel onglet
 
@@ -623,7 +623,7 @@ REVISION  CHANGE-CAUSE
 
 ---
 
-## Récapitulatif — Aide-mémoire des commandes oc
+## Récapitulatif - Aide-mémoire des commandes oc
 
 ### Authentification et contexte
 
@@ -710,4 +710,4 @@ REVISION  CHANGE-CAUSE
 
 ## Conclusion
 
-La maîtrise de `oc` est un prérequis fondamental pour travailler efficacement avec OpenShift. Que vous préfériez utiliser un terminal local ou le terminal web intégré à la console, les commandes restent identiques. La compréhension des sorties de ces commandes — en particulier `oc describe` et `oc get -o yaml` — vous permettra de diagnostiquer des problèmes et de comprendre l'état de votre cluster avec précision. La section suivante approfondira l'examen des ressources Kubernetes et leur structure interne.
+La maîtrise de `oc` est un prérequis fondamental pour travailler efficacement avec OpenShift. Que vous préfériez utiliser un terminal local ou le terminal web intégré à la console, les commandes restent identiques. La compréhension des sorties de ces commandes - en particulier `oc describe` et `oc get -o yaml` - vous permettra de diagnostiquer des problèmes et de comprendre l'état de votre cluster avec précision. La section suivante approfondira l'examen des ressources Kubernetes et leur structure interne.

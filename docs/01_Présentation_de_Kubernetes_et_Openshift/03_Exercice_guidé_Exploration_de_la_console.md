@@ -32,7 +32,7 @@ A la fin de cet exercice, vous serez capable de :
 
 **Pourquoi ?** La console web est l'interface graphique d'OpenShift. Elle permet de gérer vos applications et vos ressources Kubernetes sans avoir besoin d'utiliser la ligne de commande. C'est le point d'entrée principal pour les développeurs et les administrateurs.
 
-### 1.1 — Ouvrir la console
+### 1.1 - Ouvrir la console
 
 1. Ouvrez votre navigateur web (Chrome ou Firefox recommandé).
 2. Rendez-vous à l'adresse suivante :
@@ -61,14 +61,14 @@ Ajoutez cette URL à vos favoris, vous en aurez besoin tout au long de la format
 Le nom d'utilisateur est composé du **nom de votre ville en minuscules**, suivi de `-user`. Vérifiez bien l'orthographe. Si la connexion échoue, vérifiez que vous avez bien sélectionné "Neutron Guest Identity Management" et non un autre fournisseur d'identité.
 :::
 
-### 1.2 — Découvrir l'interface
+### 1.2 - Découvrir l'interface
 
 Une fois connecté, vous arrivez sur la page d'accueil de la console. Prenez quelques secondes pour repérer les éléments suivants :
 
 - **Le menu de gauche** : il permet d'accéder aux différentes sections (Workloads, Networking, Storage, Observe, Administration…).
 - **Le sélecteur de projet** (en haut à gauche) : il permet de choisir dans quel projet vous travaillez.
 
-:::info Console unifiée — perspective Administrator
+:::info Console unifiée - perspective Administrator
 Depuis OpenShift 4.17, la console ne dispose plus que d'une seule perspective : **Administrator**. Cette perspective unifiée couvre aussi bien les besoins des administrateurs cluster que ceux des développeurs qui déploient et gèrent des applications.
 :::
 
@@ -84,7 +84,7 @@ Vous avez réussi cette étape si :
 
 **Pourquoi ?** Avant de déployer une application, il est important de comprendre comment la console est organisée. Chaque section du menu correspond à un domaine de gestion du cluster.
 
-### 2.1 — Explorer les sections du menu
+### 2.1 - Explorer les sections du menu
 
 Parcourez les sections suivantes dans le menu latéral gauche et observez leur contenu :
 
@@ -97,7 +97,7 @@ Parcourez les sections suivantes dans le menu latéral gauche et observez leur c
 | **Observe** | Métriques, alertes, logs |
 | **Administration** | Namespaces, quotas, paramètres du cluster |
 
-### 2.2 — Créer un projet
+### 2.2 - Créer un projet
 
 Dans OpenShift, un **projet** est un espace de travail isolé. Il regroupe toutes les ressources liées à une application ou un environnement. C'est l'équivalent d'un *namespace* Kubernetes avec des fonctionnalités supplémentaires.
 
@@ -143,7 +143,7 @@ Vous avez réussi cette étape si :
 Une image de conteneur est un **modèle en lecture seule** qui sert à créer des conteneurs. C'est un peu comme un fichier ISO pour une machine virtuelle, mais beaucoup plus léger. L'image `hello-openshift` que nous utilisons fait seulement quelques mégaoctets et affiche un simple message de bienvenue.
 :::
 
-### 3.1 — Accéder à la création de Deployment
+### 3.1 - Accéder à la création de Deployment
 
 1. Dans le menu de gauche, allez dans **"Workloads" > "Deployments"**.
 2. Vérifiez que le projet sélectionné est bien `console-exploration-<CITY>`.
@@ -152,7 +152,7 @@ Une image de conteneur est un **modèle en lecture seule** qui sert à créer de
 
 ![Création d'un Deployment](./images/create_deployment_yaml.png)
 
-### 3.2 — Saisir le manifeste YAML
+### 3.2 - Saisir le manifeste YAML
 
 5. Remplacez le contenu de l'éditeur par le YAML suivant (adaptez `<CITY>` à votre ville) :
 
@@ -201,7 +201,7 @@ Vous avez réussi cette étape si :
 
 **Pourquoi ?** Un Deployment fait tourner des pods, mais ceux-ci ne sont pas accessibles de l'extérieur sans un **Service** (point d'accès réseau interne) et une **Route** (URL publique). Vous allez créer ces deux ressources depuis la console.
 
-### 4.1 — Créer un Service
+### 4.1 - Créer un Service
 
 1. Dans le menu de gauche, allez dans **"Networking" > "Services"**.
 2. Cliquez sur **"Create Service"** en haut à droite.
@@ -229,7 +229,7 @@ spec:
 Le **Service** utilise le champ `selector` pour trouver les pods correspondants (ceux qui ont le label `app: hello-openshift`). Il leur fournit une adresse réseau stable, indépendante des redémarrages de pods.
 :::
 
-### 4.2 — Créer une Route
+### 4.2 - Créer une Route
 
 5. Dans le menu de gauche, allez dans **"Networking" > "Routes"**.
 6. Cliquez sur **"Create Route"** en haut à droite.
@@ -256,31 +256,31 @@ Vous avez réussi cette étape si :
 
 **Pourquoi ?** Une Route expose votre application via une URL publique. En accédant à cette URL, vous vérifiez que toute la chaîne fonctionne : Deployment → Pod → Service → Route.
 
-### 5.1 — Accéder à l'application
+### 5.1 - Accéder à l'application
 
 1. Dans **"Networking" > "Routes"**, repérez la route `hello-openshift`.
 2. Cliquez sur l'URL affichée dans la colonne **Location** (elle ressemble à `http://hello-openshift-console-exploration-<CITY>.apps.neutron-sno-office.neutron-it.fr`).
 
 ```
 Sortie attendue :
-───────────────
+
 Un nouvel onglet s'ouvre dans votre navigateur avec le message :
 
 Hello OpenShift!
 ```
 
-### 5.2 — Inspecter les ressources depuis la console
+### 5.2 - Inspecter les ressources depuis la console
 
 3. Dans **"Workloads" > "Pods"**, vérifiez que le pod est en statut **Running** avec **Ready 1/1**.
 4. Cliquez sur le nom du pod pour explorer ses détails : onglets **Logs**, **Events**, **Terminal**.
 
 :::tip Explorer un Pod
-L'onglet **Logs** affiche la sortie standard du conteneur en temps réel. L'onglet **Terminal** vous donne un accès shell direct dans le conteneur — très utile pour le débogage.
+L'onglet **Logs** affiche la sortie standard du conteneur en temps réel. L'onglet **Terminal** vous donne un accès shell direct dans le conteneur - très utile pour le débogage.
 :::
 
 ```
 Sortie attendue (Workloads > Pods) :
-───────────────────────────────────
+
 NAME                                READY   STATUS    RESTARTS   AGE
 hello-openshift-xxxxxxxxx-xxxxx     1/1     Running   0          2m
 ```
@@ -301,7 +301,7 @@ Vous avez réussi cette étape si :
 La suppression d'un projet est **définitive**. Toutes les ressources, données et configurations du projet seront perdues. OpenShift vous demande de taper le nom du projet pour confirmer, afin d'éviter les suppressions accidentelles.
 :::
 
-### 6.1 — Supprimer le projet
+### 6.1 - Supprimer le projet
 
 1. Dans la perspective **Administrator**, allez dans **"Home" > "Projects"**.
 2. Repérez votre projet `console-exploration-<CITY>` dans la liste.
@@ -315,7 +315,7 @@ La suppression d'un projet est **définitive**. Toutes les ressources, données 
 
 ```
 Sortie attendue :
-───────────────
+
 Le projet disparaît de la liste après quelques secondes.
 Un message de confirmation s'affiche brièvement.
 ```

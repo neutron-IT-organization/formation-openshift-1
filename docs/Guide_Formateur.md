@@ -3,7 +3,7 @@ unlisted: true
 sidebar_class_name: hidden
 ---
 
-# Guide Formateur — Accès aux Quiz Rahoot
+# Guide Formateur - Accès aux Quiz Rahoot
 
 Cette page est réservée aux formateurs et n'est pas accessible via la navigation principale des étudiants.
 
@@ -22,11 +22,11 @@ Mot de passe : `formation-openshift`
 
 | Quiz | Chapitre correspondant | Nb questions |
 |------|------------------------|-------------|
-| Présentation d'OpenShift | Chapitre 1 — Présentation | 8 |
-| Architecture OpenShift et Kubernetes | Chapitre 1 — Architecture | 8 |
-| Les Workloads dans OpenShift | Chapitre 3 — Workloads | 8 |
-| Les réseaux dans OpenShift | Chapitre 4 — Réseaux | 8 |
-| Gestion et administration du cluster | Chapitre 7 — Administration | 8 |
+| Présentation d'OpenShift | Chapitre 1 - Présentation | 8 |
+| Architecture OpenShift et Kubernetes | Chapitre 1 - Architecture | 8 |
+| Les Workloads dans OpenShift | Chapitre 3 - Workloads | 8 |
+| Les réseaux dans OpenShift | Chapitre 4 - Réseaux | 8 |
+| Gestion et administration du cluster | Chapitre 7 - Administration | 8 |
 
 ---
 

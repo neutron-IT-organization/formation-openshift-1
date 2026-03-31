@@ -42,10 +42,10 @@ Le cours est organisé en modules progressifs. Chaque module suit le même sché
 
 ```
 Module N
-├── Théorie       — Concepts expliqués avec des schémas et des exemples
-├── Démonstration — Le formateur montre les manipulations en direct
-├── Pratique      — Exercices guidés dans votre namespace
-└── Quiz          — Évaluation rapide des connaissances acquises
+├ Théorie       - Concepts expliqués avec des schémas et des exemples
+├ Démonstration - Le formateur montre les manipulations en direct
+├ Pratique      - Exercices guidés dans votre namespace
+└ Quiz          - Évaluation rapide des connaissances acquises
 ```
 
 ### Liste des modules

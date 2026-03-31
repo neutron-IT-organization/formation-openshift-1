@@ -2,7 +2,7 @@
 
 ## Introduction
 
-La gestion des accès est l'un des piliers de la sécurité d'un cluster OpenShift. Sans un contrôle rigoureux des droits, n'importe quel utilisateur pourrait modifier, supprimer ou créer des ressources critiques. OpenShift implémente le **contrôle d'accès basé sur les rôles** (RBAC — Role-Based Access Control), hérité de Kubernetes et enrichi de fonctionnalités propres à la plateforme.
+La gestion des accès est l'un des piliers de la sécurité d'un cluster OpenShift. Sans un contrôle rigoureux des droits, n'importe quel utilisateur pourrait modifier, supprimer ou créer des ressources critiques. OpenShift implémente le **contrôle d'accès basé sur les rôles** (RBAC - Role-Based Access Control), hérité de Kubernetes et enrichi de fonctionnalités propres à la plateforme.
 
 Ce chapitre couvre :
 - les concepts fondamentaux du RBAC (règles, rôles, bindings),
@@ -14,13 +14,13 @@ Ce chapitre couvre :
 
 ## Fournisseurs d'Identité (Identity Providers)
 
-Avant de pouvoir attribuer des rôles, il faut que les utilisateurs puissent s'authentifier. OpenShift délègue l'authentification à des **fournisseurs d'identité** (Identity Providers ou IdP). Par défaut, un cluster fraîchement installé ne dispose d'aucun utilisateur standard — seul le compte `kubeadmin` temporaire est présent.
+Avant de pouvoir attribuer des rôles, il faut que les utilisateurs puissent s'authentifier. OpenShift délègue l'authentification à des **fournisseurs d'identité** (Identity Providers ou IdP). Par défaut, un cluster fraîchement installé ne dispose d'aucun utilisateur standard - seul le compte `kubeadmin` temporaire est présent.
 
 ### Le fournisseur htpasswd
 
 Le fournisseur **htpasswd** est le plus simple à configurer. Il repose sur un fichier contenant des paires `nom:mot_de_passe_haché` au format Apache htpasswd.
 
-**Etape 1 — Créer le fichier htpasswd :**
+**Etape 1 - Créer le fichier htpasswd :**
 
 ```bash
 # Créer le fichier avec un premier utilisateur
@@ -31,7 +31,7 @@ htpasswd -B -b /tmp/htpasswd paris-user AutreMotDePasse!
 htpasswd -B -b /tmp/htpasswd admin AdminPassword!
 ```
 
-**Etape 2 — Créer un Secret OpenShift à partir de ce fichier :**
+**Etape 2 - Créer un Secret OpenShift à partir de ce fichier :**
 
 ```bash
 oc create secret generic htpasswd-secret \
@@ -39,7 +39,7 @@ oc create secret generic htpasswd-secret \
   -n openshift-config
 ```
 
-**Etape 3 — Configurer l'OAuth du cluster pour utiliser ce Secret :**
+**Etape 3 - Configurer l'OAuth du cluster pour utiliser ce Secret :**
 
 ```yaml
 apiVersion: config.openshift.io/v1
@@ -112,7 +112,7 @@ Le RBAC repose sur trois concepts imbriqués :
 | **RoleBinding** | Namespace | Associe un Role ou un ClusterRole à un sujet dans un namespace donné |
 | **ClusterRoleBinding** | Cluster entier | Associe un ClusterRole à un sujet sur l'ensemble du cluster |
 
-![Concepts RBAC — Roles et Bindings](./images/rbac-diagram.svg)
+![Concepts RBAC - Roles et Bindings](./images/rbac-diagram.svg)
 
 *Schéma conceptuel : la différence entre Role/RoleBinding (portée namespace) et ClusterRole/ClusterRoleBinding (portée cluster).*
 
@@ -139,7 +139,7 @@ OpenShift fournit un ensemble de rôles préconfigurés couvrant les besoins les
 
 | Rôle | Description | Cas d'usage |
 |------|-------------|-------------|
-| `cluster-admin` | Superadministrateur — accès total à toutes les ressources | Administrateur plateforme |
+| `cluster-admin` | Superadministrateur - accès total à toutes les ressources | Administrateur plateforme |
 | `cluster-reader` | Lecture seule sur toutes les ressources du cluster | Auditeur de sécurité |
 | `self-provisioner` | Permet à l'utilisateur de créer ses propres projets | Développeurs en mode autonome |
 
@@ -153,7 +153,7 @@ Le rôle `cluster-admin` doit être attribué avec la plus grande parcimonie. Un
 
 La console OpenShift permet de gérer les utilisateurs, groupes et bindings de manière visuelle. L'interface se trouve dans la section **User Management** du menu latéral.
 
-![Console OpenShift — User Management > Users](./images/console-user-management.svg)
+![Console OpenShift - User Management > Users](./images/console-user-management.svg)
 
 *Vue "Users" dans la console OpenShift : liste des utilisateurs avec leur fournisseur d'identité et leur date de création. Le bouton "Create User" permet d'ajouter de nouveaux comptes.*
 

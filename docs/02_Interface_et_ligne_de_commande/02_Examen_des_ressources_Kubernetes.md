@@ -16,7 +16,7 @@ A l'issue de cette section, vous serez capable de :
 
 ## Structure d'un objet Kubernetes
 
-Chaque ressource dans Kubernetes — qu'il s'agisse d'un Pod, d'un Service, d'un Deployment ou d'une Route OpenShift — partage une structure YAML commune. Comprendre cette structure est indispensable pour lire, écrire et déboguer des manifests.
+Chaque ressource dans Kubernetes - qu'il s'agisse d'un Pod, d'un Service, d'un Deployment ou d'une Route OpenShift - partage une structure YAML commune. Comprendre cette structure est indispensable pour lire, écrire et déboguer des manifests.
 
 ![Structure YAML d'un objet Kubernetes](./images/yaml-structure.svg)
 
@@ -593,7 +593,7 @@ oc get pod myapp-7d4b9c8f6-xk2wq -o jsonpath='{.status.containerStatuses[0].read
 Ces deux commandes permettent de créer des ressources depuis un fichier YAML, mais leur comportement diffère :
 
 ```bash
-# Crée la ressource — echoue si elle existe déjà
+# Crée la ressource - echoue si elle existe déjà
 oc create -f deployment.yaml
 ```
 
@@ -602,7 +602,7 @@ deployment.apps/myapp created
 ```
 
 ```bash
-# Crée ou met à jour la ressource — idempotent
+# Crée ou met à jour la ressource - idempotent
 oc apply -f deployment.yaml
 ```
 
@@ -645,7 +645,7 @@ L'option `--dry-run=server` envoie le manifest au serveur API pour validation co
 
 ---
 
-## Récapitulatif — Aide-mémoire examen des ressources
+## Récapitulatif - Aide-mémoire examen des ressources
 
 | Commande | Description |
 |---|---|
@@ -670,4 +670,4 @@ L'option `--dry-run=server` envoie le manifest au serveur API pour validation co
 
 ## Conclusion
 
-La compréhension de la structure des objets Kubernetes — et en particulier la distinction entre `spec` (état souhaité) et `status` (état observé) — est le fondement de toute interaction efficace avec OpenShift. Les commandes `oc get -o yaml`, `oc describe` et `oc explain` forment une triade indispensable pour inspecter, comprendre et déboguer les ressources de votre cluster. La maîtrise des labels et des sélecteurs vous permettra d'organiser vos ressources et de comprendre comment les composants Kubernetes (Services, Deployments, etc.) se découvrent et se connectent dynamiquement.
+La compréhension de la structure des objets Kubernetes - et en particulier la distinction entre `spec` (état souhaité) et `status` (état observé) - est le fondement de toute interaction efficace avec OpenShift. Les commandes `oc get -o yaml`, `oc describe` et `oc explain` forment une triade indispensable pour inspecter, comprendre et déboguer les ressources de votre cluster. La maîtrise des labels et des sélecteurs vous permettra d'organiser vos ressources et de comprendre comment les composants Kubernetes (Services, Deployments, etc.) se découvrent et se connectent dynamiquement.
