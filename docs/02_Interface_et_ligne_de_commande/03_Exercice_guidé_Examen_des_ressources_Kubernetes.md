@@ -8,7 +8,7 @@ Dans cet exercice, vous allez découvrir comment **examiner**, **extraire** et *
 
 A la fin de cet exercice, vous serez capable de :
 
-- [ ] Lister des pods et personnaliser l'affichage avec `--custom-columns`
+- [ ] Lister des pods et personnaliser l'affichage avec `-o custom-columns`
 - [ ] Comprendre la structure d'un manifeste YAML Kubernetes
 - [ ] Extraire un manifeste YAML depuis une ressource existante avec `-o yaml`
 - [ ] Nettoyer un manifeste YAML pour le rendre réutilisable
@@ -83,12 +83,12 @@ shared-app-75bb5d5698-c7dzj   1/1     Running   0          10m
 - **AGE** : depuis combien de temps le pod existe
 :::
 
-### Affichage personnalisé avec --custom-columns
+### Affichage personnalisé avec -o custom-columns
 
-Parfois, la sortie par défaut contient trop d'informations. Vous pouvez créer votre propre vue avec `--custom-columns` :
+Parfois, la sortie par défaut contient trop d'informations. Vous pouvez créer votre propre vue avec `-o custom-columns` :
 
 ```bash
-oc get pods --custom-columns=NAME:.metadata.name,STATUS:.status.phase -n shared-workloads
+oc get pods -o custom-columns=NAME:.metadata.name,STATUS:.status.phase -n shared-workloads
 ```
 
 **Sortie attendue :**
@@ -98,7 +98,7 @@ shared-app-75bb5d5698-c7dzj   Running
 ```
 
 :::tip Syntaxe des colonnes personnalisées
-La syntaxe est : `--custom-columns=TITRE_COLONNE:.chemin.vers.le.champ`
+La syntaxe est : `-o custom-columns=TITRE_COLONNE:.chemin.vers.le.champ`
 
 Le chemin utilise la notation **JSONPath**, qui suit la structure du YAML. Par exemple :
 - `.metadata.name` correspond au champ `name` dans la section `metadata`
@@ -112,7 +112,7 @@ C'est tres utile pour créer des rapports concis ou des scripts d'automatisation
 Avant de passer a l'étape suivante, vérifiez que :
 - [ ] Vous voyez au moins un pod nommé `shared-app-...` dans le namespace `shared-workloads`
 - [ ] Le pod est en status `Running`
-- [ ] Vous comprenez la syntaxe `--custom-columns`
+- [ ] Vous comprenez la syntaxe `-o custom-columns`
 
 ---
 
@@ -419,7 +419,7 @@ Voici un résumé de toutes les commandes utilisées dans cet exercice :
 | Commande | Description | Quand l'utiliser |
 |---|---|---|
 | `oc get pods -n <ns>` | Lister les pods d'un namespace | Pour vérifier l'état des applications |
-| `oc get pods --custom-columns=...` | Affichage personnalisé | Pour créer des vues ciblées |
+| `oc get pods -o custom-columns=...` | Affichage personnalisé | Pour créer des vues ciblées |
 | `oc get deployment <nom> -o yaml` | Extraire le manifeste YAML | Pour récupérer la définition d'une ressource |
 | `oc apply -f <fichier>` | Appliquer un manifeste | Pour créer ou mettre a jour une ressource |
 | `oc delete -f <fichier>` | Supprimer via un manifeste | Pour supprimer les ressources décrites dans un fichier |
