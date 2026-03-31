@@ -58,7 +58,7 @@ Le menu se trouve tout en haut à droite de l'interface. Si vous ne voyez pas vo
 
 6. Ouvrez le **terminal web OpenShift** en cliquant sur l'icône de terminal en haut à droite de la console.
 
-    ![Open web terminal](/img/screenshots/dashboard.png)
+    ![Open web terminal](/img/screenshots/web_terminal_icon.png)
 
 7. Dans la fenêtre qui s'ouvre, cliquez sur **"Open terminal in a new tab"**, puis sélectionnez votre projet `<CITY>-user-ns` et cliquez sur **"Start"**.
 
