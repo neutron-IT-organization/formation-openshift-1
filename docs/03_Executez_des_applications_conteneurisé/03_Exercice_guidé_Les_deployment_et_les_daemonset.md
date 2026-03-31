@@ -18,7 +18,7 @@ Avant de commencer, assurez-vous que :
 A la fin de cet exercice, vous serez capable de :
 
 - [ ] Comprendre ce qu'est un **Deployment** et pourquoi il est essentiel dans Kubernetes/OpenShift
-- [ ] Créer un déploiement avec **3 réplicas** et des **limites de ressources**
+- [ ] Créer un déploiement avec **2 réplicas** et des **limites de ressources**
 - [ ] Observer le comportement d'un **Rolling Update** lors d'une mise à jour d'image
 - [ ] Consulter l'**historique des révisions** d'un déploiement
 - [ ] Effectuer un **rollback** pour revenir à une version précédente
@@ -32,18 +32,17 @@ A la fin de cet exercice, vous serez capable de :
 Un **Deployment** est un objet Kubernetes qui gère le cycle de vie de vos pods. Il garantit que le nombre souhaité de réplicas est toujours en cours d'exécution. Si un pod tombe en panne, le Deployment en crée automatiquement un nouveau. C'est la manière standard de déployer des applications **sans état** (stateless) sur OpenShift.
 :::
 
-Nous allons déployer un serveur web Apache (httpd) basé sur l'image Red Hat UBI 9. Voici les caractéristiques de notre déploiement :
+Nous allons déployer une application simple basée sur l'image Red Hat UBI 8. Voici les caractéristiques de notre déploiement :
 
 | Paramètre | Valeur | Explication |
 |---|---|---|
 | **Nom** | `my-deployment` | Le nom de notre déploiement |
-| **Réplicas** | `3` | 3 copies du pod pour la haute disponibilité |
-| **Image** | `registry.access.redhat.com/ubi9/httpd-24:1-3` | Serveur web Apache sur Red Hat UBI 9 |
-| **Port** | `8080` | Le port sur lequel le serveur écoute |
-| **CPU request** | `100m` | Le minimum de CPU garanti (0.1 core) |
-| **CPU limit** | `500m` | Le maximum de CPU autorisé (0.5 core) |
-| **Mémoire request** | `64Mi` | Le minimum de mémoire garanti |
-| **Mémoire limit** | `128Mi` | Le maximum de mémoire autorisé |
+| **Réplicas** | `2` | 2 copies du pod pour la haute disponibilité |
+| **Image** | `registry.access.redhat.com/ubi8/ubi:latest` | Image Red Hat UBI 8 |
+| **CPU request** | `5m` | Le minimum de CPU garanti |
+| **CPU limit** | `50m` | Le maximum de CPU autorisé |
+| **Mémoire request** | `16Mi` | Le minimum de mémoire garanti |
+| **Mémoire limit** | `64Mi` | Le maximum de mémoire autorisé |
 
 :::tip Requests vs Limits
 - **Request** = le minimum garanti. Kubernetes réserve cette quantité de ressources pour votre pod.
@@ -69,7 +68,7 @@ metadata:
   labels:
     app: my-app
 spec:
-  replicas: 3
+  replicas: 2
   selector:
     matchLabels:
       app: my-app
@@ -85,26 +84,26 @@ spec:
     spec:
       containers:
       - name: my-container
-        image: registry.access.redhat.com/ubi9/httpd-24:1-3
-        ports:
-        - containerPort: 8080
+        image: registry.access.redhat.com/ubi8/ubi:latest
+        command: ["/bin/bash", "-c"]
+        args: ["while true; do sleep 30; done"]
         resources:
           requests:
-            memory: "64Mi"
-            cpu: "100m"
+            memory: "16Mi"
+            cpu: "5m"
           limits:
-            memory: "128Mi"
-            cpu: "500m"
+            memory: "64Mi"
+            cpu: "50m"
 ```
 
 :::info Décryptage du YAML
 Voici les sections clés à comprendre :
 
-- **`replicas: 3`** : nous voulons 3 pods identiques en permanence.
+- **`replicas: 2`** : nous voulons 2 pods identiques en permanence.
 - **`selector.matchLabels`** : le Deployment utilise ce label (`app: my-app`) pour savoir quels pods il doit gérer.
 - **`strategy.type: RollingUpdate`** : lors d'une mise à jour, les pods sont remplacés progressivement (et non tous en même temps).
-- **`maxSurge: 1`** : pendant la mise à jour, au maximum 1 pod supplémentaire peut être créé (donc 4 pods temporairement).
-- **`maxUnavailable: 1`** : pendant la mise à jour, au maximum 1 pod peut être indisponible (donc minimum 2 pods actifs).
+- **`maxSurge: 1`** : pendant la mise à jour, au maximum 1 pod supplémentaire peut être créé (donc 3 pods temporairement).
+- **`maxUnavailable: 1`** : pendant la mise à jour, au maximum 1 pod peut être indisponible (donc minimum 1 pod actif).
 - **`resources`** : les limites de CPU et mémoire pour chaque pod.
 :::
 
@@ -144,13 +143,13 @@ oc get deployments
 
 ```
 NAME            READY   UP-TO-DATE   AVAILABLE   AGE
-my-deployment   3/3     3            3           30s
+my-deployment   2/2     2            2           30s
 ```
 
 :::info Lecture du tableau
-- **READY 3/3** : 3 pods sur 3 sont prêts.
-- **UP-TO-DATE 3** : 3 pods utilisent la dernière version du template.
-- **AVAILABLE 3** : 3 pods sont disponibles pour recevoir du trafic.
+- **READY 2/2** : 2 pods sur 2 sont prêts.
+- **UP-TO-DATE 2** : 2 pods utilisent la dernière version du template.
+- **AVAILABLE 2** : 2 pods sont disponibles pour recevoir du trafic.
 - Si vous voyez `0/3` dans READY, patientez quelques secondes : les pods sont en cours de démarrage.
 :::
 
@@ -185,20 +184,19 @@ oc describe deployment my-deployment
 Name:                   my-deployment
 Namespace:              votre-projet
 Selector:               app=my-app
-Replicas:               3 desired | 3 updated | 3 total | 3 available | 0 unavailable
+Replicas:               2 desired | 2 updated | 2 total | 2 available | 0 unavailable
 StrategyType:           RollingUpdate
 RollingUpdateStrategy:  1 max unavailable, 1 max surge
 Pod Template:
   Containers:
    my-container:
-    Image:      registry.access.redhat.com/ubi9/httpd-24:1-3
-    Port:       8080/TCP
+    Image:      registry.access.redhat.com/ubi8/ubi:latest
     Limits:
-      cpu:     500m
-      memory:  128Mi
-    Requests:
-      cpu:     100m
+      cpu:     50m
       memory:  64Mi
+    Requests:
+      cpu:     5m
+      memory:  16Mi
 ```
 
 ### Vérification dans la console web
@@ -233,7 +231,7 @@ Le Rolling Update remplace les pods **un par un** (ou selon les valeurs de `maxS
 3. Un **ancien pod** est alors supprimé.
 4. Le processus se répète jusqu'à ce que **tous les pods** utilisent la nouvelle image.
 
-Grâce à ce mécanisme, au moins 2 pods (sur 3) sont toujours disponibles pendant la mise à jour. Vos utilisateurs ne subissent **aucune interruption**.
+Grâce à ce mécanisme, au moins 1 pod (sur 2) est toujours disponible pendant la mise à jour. Vos utilisateurs ne subissent **aucune interruption**.
 :::
 
 ### 5.2 : Préparer l'observation
@@ -255,7 +253,7 @@ Le flag `-w` (watch) affiche les changements en temps réel. Appuyez sur `Ctrl+C
 Nous allons changer la version de l'image pour simuler une mise à jour :
 
 ```bash
-oc set image deployment/my-deployment my-container=registry.access.redhat.com/ubi9/httpd-24:1-325
+oc set image deployment/my-deployment my-container=registry.access.redhat.com/ubi8/ubi-minimal:latest
 ```
 
 **Sortie attendue :**
@@ -277,9 +275,8 @@ oc rollout status deployment/my-deployment
 **Sortie attendue :**
 
 ```
-Waiting for deployment "my-deployment" rollout to finish: 1 out of 3 new replicas have been updated...
-Waiting for deployment "my-deployment" rollout to finish: 2 out of 3 new replicas have been updated...
-Waiting for deployment "my-deployment" rollout to finish: 2 of 3 updated replicas are available...
+Waiting for deployment "my-deployment" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "my-deployment" rollout to finish: 1 of 2 updated replicas are available...
 deployment "my-deployment" successfully rolled out
 ```
 
@@ -294,7 +291,7 @@ oc get deployment my-deployment -o jsonpath='{.spec.template.spec.containers[0].
 **Sortie attendue :**
 
 ```
-registry.access.redhat.com/ubi9/httpd-24:1-325
+registry.access.redhat.com/ubi8/ubi-minimal:latest
 ```
 
 Vérifiez que tous les pods sont en cours d'exécution :
@@ -309,7 +306,6 @@ oc get pods
 NAME                             READY   STATUS    RESTARTS   AGE
 my-deployment-7b9f4c8d2e-jkl78   1/1     Running   0          45s
 my-deployment-7b9f4c8d2e-mno90   1/1     Running   0          38s
-my-deployment-7b9f4c8d2e-pqr12   1/1     Running   0          30s
 ```
 
 :::note
@@ -336,12 +332,12 @@ REVISION  CHANGE-CAUSE
 ```
 
 :::info Lecture de l'historique
-- **Revision 1** : notre premier déploiement avec l'image `ubi9/httpd-24:1-3`
-- **Revision 2** : la mise à jour avec l'image `ubi9/httpd-24:1-325`
+- **Revision 1** : notre premier déploiement avec l'image `ubi8/ubi:latest`
+- **Revision 2** : la mise à jour avec l'image `ubi8/ubi-minimal:latest`
 - **CHANGE-CAUSE** est vide car nous n'avons pas annoté nos déploiements. Vous pouvez ajouter une cause avec :
 
 ```bash
-oc annotate deployment/my-deployment kubernetes.io/change-cause="Mise à jour vers httpd-24:1-325"
+oc annotate deployment/my-deployment kubernetes.io/change-cause="Mise à jour vers ubi-minimal:latest"
 ```
 :::
 
@@ -360,19 +356,18 @@ Pod Template:
                 pod-template-hash=5d8f6b7c4a
   Containers:
    my-container:
-    Image:      registry.access.redhat.com/ubi9/httpd-24:1-3
-    Port:       8080/TCP
+    Image:      registry.access.redhat.com/ubi8/ubi:latest
     Limits:
-      cpu:     500m
-      memory:  128Mi
-    Requests:
-      cpu:     100m
+      cpu:     50m
       memory:  64Mi
+    Requests:
+      cpu:     5m
+      memory:  16Mi
 ```
 
 ### Vérification
 
-Confirmez que vous avez bien 2 révisions dans l'historique. La révision 1 doit contenir l'image `:1-3` et la révision 2 l'image `:1-325`.
+Confirmez que vous avez bien 2 révisions dans l'historique. La révision 1 doit contenir l'image `ubi8/ubi:latest` et la révision 2 l'image `ubi8/ubi-minimal:latest`.
 
 ---
 
@@ -381,7 +376,7 @@ Confirmez que vous avez bien 2 révisions dans l'historique. La révision 1 doit
 **Pourquoi cette étape ?** En production, si une mise à jour introduit un bug ou un comportement inattendu, vous devez pouvoir **revenir rapidement** à la version précédente. C'est le principe du rollback.
 
 :::warning Scénario
-Imaginons que la version `1-325` de notre application pose un problème (erreurs, lenteur, crash...). Nous devons revenir à la version `1-3` qui fonctionnait correctement.
+Imaginons que la version `ubi-minimal:latest` de notre application pose un problème (erreurs, lenteur, crash...). Nous devons revenir à la version `ubi:latest` qui fonctionnait correctement.
 :::
 
 ### 7.1 : Lancer le rollback
@@ -527,7 +522,7 @@ Voici un résumé visuel de toutes les commandes et concepts vus dans cet exerci
 
 | Étape | Commande | Description |
 |---|---|---|
-| Créer un déploiement | `oc apply -f my-deployment.yaml` | Crée le Deployment avec 3 réplicas |
+| Créer un déploiement | `oc apply -f my-deployment.yaml` | Crée le Deployment avec 2 réplicas |
 | Vérifier le déploiement | `oc get deployments` | Affiche l'état des déploiements |
 | Lister les pods | `oc get pods` | Affiche les pods en cours d'exécution |
 | Détails du déploiement | `oc describe deployment my-deployment` | Affiche les détails complets |
