@@ -65,6 +65,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: my-deployment
+  namespace: <CITY>-user-ns
   labels:
     app: my-app
 spec:
