@@ -145,7 +145,7 @@ Cette méthode est utile lorsque l'authentification par mot de passe est désact
 
 Dans la console Web OpenShift, cliquez sur votre nom d'utilisateur en haut à droite, puis sélectionnez **"Copy login command"**.
 
-![Copie de la commande de connexion depuis la console](./images/copy-login-command.svg)
+![Copie de la commande de connexion depuis la console](./images/copy-login-command.png)
 
 *La console OpenShift propose une option "Copy login command" dans le menu utilisateur pour récupérer un token d'authentification.*
 
