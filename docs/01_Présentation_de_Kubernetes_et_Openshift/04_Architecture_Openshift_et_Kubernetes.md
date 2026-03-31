@@ -257,36 +257,6 @@ Pour un premier cluster ou un environnement cloud, **IPI** est recommandé. Pour
 
 ---
 
-## Architecture globale : récapitulatif
-
-```
-                    Cluster OpenShift
-┌┐
-│                                                         │
-│  Plan de contrôle (3 nœuds en HA)                      │
-│  ┌┐  ┌┐  ┌┐  │
-│  │ etcd     │  │ API      │  │ Scheduler +         │  │
-│  │ (state)  │  │ Server   │  │ Controller Manager  │  │
-│  └┘  └┘  └┘  │
-│                                                         │
-│  Nœuds de calcul (N nœuds)                             │
-│  ┌┐   │
-│  │  kubelet  │  CRI-O  │  kube-proxy  │  Pods     │   │
-│  └┘   │
-│                                                         │
-│  Composants OpenShift (opérateurs)                      │
-│  Router │ Registry │ Monitoring │ OAuth │ MCO │ CVO    │
-└┘
-```
-
-Chaque couche a une responsabilité claire :
-- **etcd** : persistance de l'état
-- **API server** : point d'entrée unique, validation, autorisation
-- **Scheduler + Controllers** : logique de placement et de réconciliation
-- **kubelet + CRI-O** : exécution effective des conteneurs
-- **Opérateurs OpenShift** : fonctionnalités de plateforme (réseau, monitoring, builds, auth)
-
----
 
 ## Conclusion
 

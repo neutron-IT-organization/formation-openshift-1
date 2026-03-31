@@ -2,7 +2,7 @@
 
 ## Ce que vous allez apprendre
 
-Cet exercice vous guide pas à pas dans votre **première interaction** avec la console web d'OpenShift. Vous allez découvrir comment créer un espace de travail (un *projet*), naviguer dans la perspective Administrator, y déployer une application, puis observer et gérer les ressources que Kubernetes a créées pour vous. Chaque étape explique **pourquoi** vous faites telle ou telle action, afin que vous compreniez les concepts sous-jacents et pas seulement la marche à suivre.
+Cet exercice vous guide pas à pas dans votre **première interaction** avec la console web d'OpenShift. Vous allez découvrir comment créer un espace de travail (un *projet*), naviguer dans la perspective Administrator, y déployer une application, puis observer et gérer les ressources que Kubernetes a créées pour vous. 
 
 Ne vous inquiétez pas si certains termes sont nouveaux : ils seront tous expliqués au fil de l'exercice.
 
@@ -255,7 +255,7 @@ Vous avez réussi cette étape si :
 ### 5.1 - Accéder à l'application
 
 1. Dans **"Networking" > "Routes"**, repérez la route `hello-openshift`.
-2. Cliquez sur l'URL affichée dans la colonne **Location** (elle ressemble à `http://hello-openshift-console-exploration-<CITY>.apps.neutron-sno-office.neutron-it.fr`).
+2. Cliquez sur l'URL affichée dans la colonne **Location** (elle ressemble à `https://hello-openshift-console-exploration-<CITY>.apps.neutron-sno-office.neutron-it.fr`).
 
 ```
 Sortie attendue :
@@ -274,12 +274,6 @@ Hello OpenShift!
 L'onglet **Logs** affiche la sortie standard du conteneur en temps réel. L'onglet **Terminal** vous donne un accès shell direct dans le conteneur - très utile pour le débogage.
 :::
 
-```
-Sortie attendue (Workloads > Pods) :
-
-NAME                                READY   STATUS    RESTARTS   AGE
-hello-openshift-xxxxxxxxx-xxxxx     1/1     Running   0          2m
-```
 
 ### Vérification
 
