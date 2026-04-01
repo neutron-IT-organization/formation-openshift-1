@@ -1,25 +1,27 @@
-# Exercice Guidé : Les Services et les Routes
+# Exercice Guidé : Les Réseaux de Pods et de Services
 
 ## Ce que vous allez apprendre
 
-Dans cet exercice, vous allez découvrir comment rendre une application accessible depuis l'extérieur du cluster. Vous apprendrez à créer un **Service** pour stabiliser l'identité de vos pods et une **Route HTTPS** pour exposer l'application de manière sécurisée (TLS Edge).
+Dans cet exercice, vous allez explorer les trois couches de connectivité dans OpenShift :
+1.  **IP de Pod** : Communication directe entre conteneurs (instable).
+2.  **ClusterIP** : IP de service stable à l'intérieur du cluster.
+3.  **NodePort** : Accès limité via l'IP du noeud (pour certains cas techniques).
+4.  **Route HTTPS** : Exposition sécurisée sur Internet pour les utilisateurs finaux.
 
 ---
 
 ## Objectifs
 
-A la fin de cet exercice, vous serez capable de :
-
-- [ ] Déployer une application web simple
-- [ ] Créer un **Service ClusterIP** pour la communication interne
-- [ ] Créer une **Route HTTPS avec terminaison Edge**
-- [ ] Vérifier le fonctionnement de la redirection HTTP vers HTTPS
+- [ ] Déployer une application et tester la communication via son **IP de Pod**
+- [ ] Créer et tester un service **ClusterIP**
+- [ ] Créer et tester un service **NodePort**
+- [ ] Exposer l'application via une **Route HTTPS** avec redirection automatique
 
 ---
 
 ## Étape 1 : Déployer l'application
 
-Contrairement aux exercices précédents, nous allons tout faire de zéro. Commençons par déployer une application de bienvenue.
+Utilisons la **Welcome App** (port 8080).
 
 Créez le fichier `welcome-deployment.yaml` :
 
@@ -60,39 +62,114 @@ oc apply -f welcome-deployment.yaml
 
 ---
 
-## Étape 2 : Créer un Service ClusterIP
+## Étape 2 : Communication via l'IP du Pod (Interne)
 
-Le Service est l'aiguilleur qui permet de joindre les pods via une IP stable à l'intérieur du cluster.
+Chaque pod a sa propre adresse IP, mais elle est **éphémère**. Si le pod meurt, l'IP change.
 
-Créez le fichier `welcome-svc.yaml` :
+### 2.1 Récupérer l'IP du Pod
+```bash
+oc get pods -o wide
+```
+*Notez l'IP affichée dans la colonne `IP` (ex: `10.128.x.y`).*
+
+### 2.2 Tester la connexion
+Même sans service, vous pouvez joindre le pod directement depuis n'importe quel conteneur du cluster. Utilisons `oc exec` pour lancer un `curl` :
+
+```bash
+# Remplacez <POD_IP> par l'IP notée précédemment
+oc exec deployment/welcome-app -- curl -s <POD_IP>:8080 | grep "Bienvenue"
+```
+
+---
+
+## Étape 3 : Créer et tester le Service ClusterIP (Stable)
+
+Le **ClusterIP** fournit une IP virtuelle stable qui redirige vers vos pods. C'est le mode par défaut.
+
+### 3.1 Créer le service
+Créez le fichier `welcome-clusterip.yaml` :
 
 ```yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: welcome-svc
+  name: welcome-svc-clusterip
   namespace: <CITY>-user-ns
 spec:
   selector:
     app: welcome-app
   ports:
   - protocol: TCP
-    port: 80          # Port exposé par le service
-    targetPort: 8080  # Port réel de l'application
+    port: 80
+    targetPort: 8080
   type: ClusterIP
 ```
 
-Appliquez le service :
 ```bash
-oc apply -f welcome-svc.yaml
+oc apply -f welcome-clusterip.yaml
+```
+
+### 3.2 Tester via l'IP du Service
+Récupérez l'IP stable du service :
+```bash
+oc get svc welcome-svc-clusterip
+```
+*Notez la `CLUSTER-IP` (ex: `172.30.x.y`).*
+
+Testez la connexion (sur le port 80 cette fois) :
+```bash
+oc exec deployment/welcome-app -- curl -s <CLUSTER_IP>:80 | grep "Bienvenue"
 ```
 
 ---
 
-## Étape 3 : Créer une Route HTTPS (TLS Edge)
+## Étape 4 : Créer et tester le Service NodePort (Accès par le noeud)
 
-C'est ici que nous exposons l'application sur Internet de manière sécurisée. Nous utilisons le mode **Edge** pour que le certificat soit géré automatiquement par le routeur OpenShift.
+Le **NodePort** expose l'application sur un port spécifique (généralement entre 30000 et 32767) sur **tous les noeuds** du cluster.
 
+### 4.1 Créer le service NodePort
+Créez le fichier `welcome-nodeport.yaml` :
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: welcome-svc-nodeport
+  namespace: <CITY>-user-ns
+spec:
+  selector:
+    app: welcome-app
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+    nodePort: 30080 # On choisit un port fixe pour l'exemple
+  type: NodePort
+```
+
+```bash
+oc apply -f welcome-nodeport.yaml
+```
+
+### 4.2 Tester via l'IP du Noeud
+Récupérez l'IP du noeud (le serveur OpenShift) :
+```bash
+oc get nodes -o wide
+```
+*Notez l'IP dans la colonne `INTERNAL-IP` (ou utilisez le nom du cluster).*
+
+Testez depuis le terminal (si le réseau le permet) :
+```bash
+curl -s http://<NODE_IP>:30080 | grep "Bienvenue"
+```
+
+---
+
+## Étape 5 : Créer la Route HTTPS (Exposition Publique)
+
+C'est la méthode recommandée pour exposer des applications web.
+
+### 5.1 Créer la Route Edge
 Créez le fichier `welcome-route.yaml` :
 
 ```yaml
@@ -104,42 +181,41 @@ metadata:
 spec:
   to:
     kind: Service
-    name: welcome-svc
+    name: welcome-svc-clusterip
   port:
-    targetPort: 8080
+    targetPort: 80
   tls:
-    termination: edge                        # HTTPS sécurisé
-    insecureEdgeTerminationPolicy: Redirect  # Redirection HTTP -> HTTPS
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
 ```
 
-Appliquez la route :
 ```bash
 oc apply -f welcome-route.yaml
 ```
 
----
-
-## Étape 4 : Vérifier l'accès sécurisé
-
-Récupérez l'URL de votre route :
+### 5.2 Tester dans le navigateur
 ```bash
 oc get route welcome-route -o jsonpath='https://{.spec.host}{"\n"}'
 ```
-
-1.  Copiez l'URL et ouvrez-la dans votre navigateur.
-2.  Vérifiez la présence du **cadenas** dans la barre d'adresse.
-3.  Testez la redirection : essayez d'entrer l'URL en commençant par `http://`. Vous devriez être redirigé automatiquement vers `https://`.
-
-:::info Pourquoi HTTPS ?
-En production, il est impératif de chiffrer les communications. Le mode **Edge** est le plus utilisé car il simplifie la gestion des certificats : c'est OpenShift qui s'en occupe pour vous au point d'entrée du cluster.
-:::
+Ouvrez l'URL en `https://`. Vous êtes maintenant sur le réseau public sécurisé.
 
 ---
 
-## Étape 5 : Nettoyage
+## Récapitulatif
+
+| Méthode | Portée | Stabilité | Usage principal |
+|---|---|---|---|
+| **Pod IP** | Interne uniquement | **Instable** | Debugging uniquement |
+| **ClusterIP** | Interne uniquement | **Stable** | Communication entre micro-services |
+| **NodePort** | Interne + IP Noeuds | **Stable** | Accès technique sans Router |
+| **Route HTTPS** | **Internet (Public)** | **Stable** | Production, accès utilisateurs |
+
+---
+
+## Étape 6 : Nettoyage
 
 ```bash
-oc delete -f welcome-deployment.yaml
-oc delete -f welcome-svc.yaml
-oc delete -f welcome-route.yaml
+oc delete deployment welcome-app
+oc delete svc welcome-svc-clusterip welcome-svc-nodeport
+oc delete route welcome-route
 ```
