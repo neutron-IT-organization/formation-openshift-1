@@ -185,6 +185,8 @@ Retournez immédiatement sur votre navigateur. Vous allez voir les carrés **ble
 
 ![Rolling Update en cours (mélange Bleu/Vert)](/img/screenshots/rollouts_demo_rolling.png)
 
+![Rolling Update terminé (uniquement Vert)](/img/screenshots/rollouts_demo_green.png)
+
 *   C'est le **Rolling Update** : OpenShift crée les nouveaux pods "verts" et s'assure qu'ils sont prêts avant de supprimer les anciens pods "bleus".
 *   Grâce au paramètre `maxUnavailable: 1`, vous ne devriez voir aucune interruption puisque l'un des deux pods reste actif pendant que l'autre est mis à jour.
 
