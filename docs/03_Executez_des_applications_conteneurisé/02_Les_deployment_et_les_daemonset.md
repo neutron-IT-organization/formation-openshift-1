@@ -120,7 +120,7 @@ N'utilisez jamais `image: mon-app:latest` en production. Un tag fixe comme `1.0.
 
 La console web OpenShift offre une vue graphique détaillée de chaque Deployment : état des pods, historique des révisions, métriques de ressources et accès aux logs.
 
-![Vue d'un Deployment dans la console OpenShift](./images/console-deployment-view.svg)
+![Vue d'un Deployment dans la console OpenShift](./images/deployment-console-view.png)
 
 *La console OpenShift affiche l'état en temps réel des pods, les révisions disponibles et les options de scaling.*
 
