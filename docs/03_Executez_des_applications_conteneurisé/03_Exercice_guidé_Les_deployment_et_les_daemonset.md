@@ -222,9 +222,7 @@ Copiez l'URL affichée et ouvrez-la dans votre navigateur en préfixant avec `ht
 http://my-deployment-<CITY>-user-ns.apps.<cluster-domain>
 ```
 
-Vous devriez voir une **page bleue** affichant un message de bienvenue avec le numéro de version :
-
-![Version 1 - Page bleue](/img/screenshots/welcome-php-v1.png)
+Vous devriez voir une **page bleue** affichant un message de bienvenue avec le numéro de version.
 
 :::tip
 Gardez cet onglet de navigateur ouvert ! Vous allez l'utiliser pour observer visuellement le changement de version lors du Rolling Update.
@@ -342,9 +340,7 @@ deployment "my-deployment" successfully rolled out
 
 Retournez dans votre navigateur et **rafraîchissez la page** (F5 ou Ctrl+R).
 
-La page doit maintenant afficher une **couleur verte**, confirmant que vous êtes sur la version 2 de l'application :
-
-![Version 2 - Page verte](/img/screenshots/welcome-php-v2.png)
+La page doit maintenant afficher une **couleur verte**, confirmant que vous êtes sur la version 2 de l'application.
 
 :::note Pourquoi le changement de couleur ?
 Les deux tags d'image (`ffcd15` et `8b052ea`) correspondent à deux versions du code PHP avec des feuilles de style différentes. C'est un exemple typique de ce qui se passe lors d'une mise à jour : les utilisateurs voient la nouvelle interface dès que leurs pods sont migrés.
