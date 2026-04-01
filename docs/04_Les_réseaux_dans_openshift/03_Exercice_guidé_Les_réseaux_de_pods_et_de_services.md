@@ -54,7 +54,7 @@ oc get deployment olympic-medals-app
 
 ```
 NAME                 READY   UP-TO-DATE   AVAILABLE   AGE
-olympic-medals-app   2/2     2            2           5m
+olympic-medals-app   1/1     1            1           5m
 ```
 
 **Vérifiez les pods :**
@@ -68,15 +68,14 @@ oc get pods -l app=olympic-medals-app
 ```
 NAME                                  READY   STATUS    RESTARTS   AGE
 olympic-medals-app-xxx-yyy1           1/1     Running   0          5m
-olympic-medals-app-xxx-yyy2           1/1     Running   0          5m
 ```
 
 :::warning Pods non disponibles ?
-Si vous voyez `0/2` dans la colonne READY ou que les pods ne sont pas en status `Running`, attendez quelques secondes et relancez les commandes. Si le problème persiste, appelez le formateur.
+Si vous voyez `0/1` dans la colonne READY ou que les pods ne sont pas en status `Running`, attendez quelques secondes et relancez les commandes. Si le problème persiste, appelez le formateur.
 :::
 
-:::tip Pourquoi 2 pods ?
-Le déploiement a été configuré avec **2 réplicas**. Cela signifie que deux copies identiques de l'application tournent en parallèle. Le Service que nous allons créer répartira automatiquement le trafic entre ces deux pods (load balancing).
+:::tip Haute disponibilité
+Même si nous n'utilisons ici qu'un seul réplica pour économiser les ressources, sachez qu'en production, on déploierait au moins **2 pods**. Le Service que nous allons créer répartit automatiquement le trafic entre tous les pods disponibles (load balancing).
 :::
 
 ---
@@ -186,11 +185,11 @@ Type:              ClusterIP
 IP:                172.30.x.x
 Port:              <unset>  80/TCP
 TargetPort:        5000/TCP
-Endpoints:         10.128.x.x:5000, 10.128.x.x:5000
+Endpoints:         10.128.x.x:5000
 ```
 
 :::warning Vérifiez les Endpoints !
-La ligne **Endpoints** est cruciale. Elle doit contenir **deux adresses IP** (une par pod). Si vous voyez `Endpoints: <none>`, cela signifie que le sélecteur (`app=olympic-medals-app`) ne correspond à aucun pod. Vérifiez les labels de vos pods avec `oc get pods --show-labels`.
+La ligne **Endpoints** est cruciale. Elle doit contenir **l'adresse IP** de votre pod. Si vous voyez `Endpoints: <none>`, cela signifie que le sélecteur (`app: olympic-medals-app`) ne correspond à aucun pod. Vérifiez les labels de vos pods avec `oc get pods --show-labels`.
 :::
 
 ### Vérification de l'étape 1
@@ -205,10 +204,10 @@ oc get endpoints olympic-medals-svc
 
 ```
 NAME                 ENDPOINTS                             AGE
-olympic-medals-svc   10.128.x.x:5000,10.128.x.x:5000      1m
+olympic-medals-svc   10.128.x.x:5000                       1m
 ```
 
-Vous devez voir **2 endpoints** (un par pod). Si c'est le cas, le Service est correctement configuré. Mais vous ne pouvez pas encore y accéder depuis votre navigateur : il faut une **Route** pour cela.
+Vous devez voir **l'adresse IP** de votre pod. Si c'est le cas, le Service est correctement configuré. Mais vous ne pouvez pas encore y accéder depuis votre navigateur : il faut une **Route** pour cela.
 
 ---
 
@@ -568,7 +567,6 @@ oc get pods -l app=olympic-medals-app
 ```
 NAME                                  READY   STATUS    RESTARTS   AGE
 olympic-medals-app-xxx-yyy1           1/1     Running   0          20m
-olympic-medals-app-xxx-yyy2           1/1     Running   0          20m
 ```
 
 Les pods sont toujours en fonctionnement : seules les ressources réseau ont été supprimées.
