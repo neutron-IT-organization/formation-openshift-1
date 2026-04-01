@@ -1,29 +1,27 @@
-# Exercice Guidé : Les StatefulSets (Version Visuelle avec Nginx)
+# Exercice Guidé : Les StatefulSets (Version Visuelle avec Apache)
 
 ## Ce que vous allez apprendre
 
-Dans cet exercice, vous allez visualiser concrètement les deux piliers d'un **StatefulSet** :
-1.  **L'Identité Stable** : Chaque pod a un nom fixe (`web-0`, `web-1`).
-2.  **Le Stockage Dédié** : Contrairement à un Deployment classique, chaque pod du StatefulSet possède **son propre disque dur persistant**, totalement indépendant des autres.
+Dans cet exercice, vous allez visualiser concrètement pourquoi on utilise un **StatefulSet** pour les applications avec état :
+1.  **L'Identité Stable** : Chaque pod a un nom fixe (`web-0`, `web-1`) qui ne change jamais.
+2.  **Le Stockage Persistant Dédié** : Chaque pod possède **son propre disque dur** (PVC). Si le pod est supprimé, il retrouve exactement son disque et ses données au redémarrage.
 
-Nous allons utiliser un serveur web **Nginx** pour afficher le contenu de ces disques directement dans votre navigateur.
+Nous allons utiliser un serveur **Apache (httpd)** pour afficher le contenu de ces disques.
 
 ---
 
 ## Objectifs
 
-A la fin de cet exercice, vous serez capable de :
-
-- [ ] Déployer un **StatefulSet** avec un template de volume
+- [ ] Déployer un **StatefulSet** avec 2 réplicas
 - [ ] Vérifier que chaque pod a son **propre volume (PVC)** distinct
 - [ ] Personnaliser le contenu de chaque volume via le navigateur
-- [ ] Prouver que les données survivent au redémarrage d'un pod spécifique
+- [ ] Prouver la **persistance** après la suppression d'un pod
 
 ---
 
 ## Étape 1 : Créer le manifeste YAML
 
-Nous allons créer un StatefulSet avec **2 réplicas**, un **Service Headless** (obligatoire pour l'identité réseau) et une **Route** pour accéder à l'interface.
+Nous allons utiliser l'image **Apache (httpd)** de Red Hat qui est très stable pour ce type d'exercice.
 
 Créez un fichier nommé `stateful-visual.yaml` :
 
@@ -37,17 +35,15 @@ Contenu du fichier :
 apiVersion: v1
 kind: Service
 metadata:
-  name: nginx-headless
+  name: web-headless
   namespace: <CITY>-user-ns
-  labels:
-    app: nginx
 spec:
   ports:
   - port: 80
     name: web
-  clusterIP: None # <-- Ceci définit un service "Headless"
+  clusterIP: None
   selector:
-    app: nginx
+    app: web
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -55,35 +51,34 @@ metadata:
   name: web
   namespace: <CITY>-user-ns
 spec:
-  serviceName: "nginx-headless"
+  serviceName: "web-headless"
   replicas: 2
   selector:
     matchLabels:
-      app: nginx
+      app: web
   template:
     metadata:
       labels:
-        app: nginx
+        app: web
     spec:
       containers:
-      - name: nginx
-        image: registry.access.redhat.com/ubi9/nginx-122:latest
+      - name: apache
+        image: registry.access.redhat.com/ubi8/httpd-24:latest
         ports:
         - containerPort: 8080
-          name: web
         resources:
           requests:
-            cpu: "10m"
+            cpu: "20m"
             memory: "64Mi"
           limits:
             cpu: "100m"
             memory: "128Mi"
         volumeMounts:
-        - name: www
-          mountPath: /usr/share/nginx/html
+        - name: data
+          mountPath: /var/www/html
   volumeClaimTemplates:
   - metadata:
-      name: www
+      name: data
     spec:
       accessModes: [ "ReadWriteOnce" ]
       resources:
@@ -93,11 +88,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: nginx-public
+  name: web-public
   namespace: <CITY>-user-ns
 spec:
   selector:
-    app: nginx
+    app: web
   ports:
   - port: 80
     targetPort: 8080
@@ -105,19 +100,19 @@ spec:
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  name: nginx-route
+  name: web-route
   namespace: <CITY>-user-ns
 spec:
   to:
     kind: Service
-    name: nginx-public
+    name: web-public
   tls:
     termination: edge
 ```
 
 ---
 
-## Étape 2 : Déploiement et observation
+## Étape 2 : Déploiement et Vérification
 
 Appliquez le fichier :
 
@@ -125,71 +120,52 @@ Appliquez le fichier :
 oc apply -f stateful-visual.yaml
 ```
 
-### 2.1 Observer l'ordre de démarrage
-Le StatefulSet démarre les pods **un par un**. Vérifiez cela :
+### 2.1 Vérifier les pods et PVC
+Vérifiez que vous avez 2 pods (`web-0`, `web-1`) et 2 PVC (`data-web-0`, `data-web-1`) :
 ```bash
-oc get pods -l app=nginx
+oc get pods,pvc -l app=web
 ```
-*Le pod `web-1` ne démarrera que lorsque `web-0` sera prêt.*
-
-### 2.2 Vérifier les volumes (PVC)
-C'est le point clé : vous allez voir **deux volumes distincts**, un pour chaque pod.
-```bash
-oc get pvc
-```
-| Nom du PVC | Lié au Pod |
-|---|---|
-| `www-web-0` | `web-0` |
-| `www-web-1` | `web-1` |
 
 ---
 
-## Étape 3 : Personnaliser les données (La partie visuelle)
+## Étape 3 : Écrire des données (La partie visuelle)
 
-Actuellement, les volumes sont vides. Nous allons écrire un message différent dans chaque pod pour prouver qu'ils ne partagent pas le même disque.
+Nous allons injecter une page HTML différente dans chaque pod.
 
-### Écrire dans le Pod 0 :
+### Pour le Pod 0 :
 ```bash
-oc exec web-0 -- bash -c 'echo "<html><body style=\"background-color:#ADD8E6\"><h1>Je suis le POD 0</h1><p>Mon stockage est unique et persistant.</p></body></html>" > /usr/share/nginx/html/index.html'
+oc exec web-0 -- bash -c 'echo "<html><body style=\"background-color:aliceblue;text-align:center;padding:50px;\"><h1>POD 0 : Mon disque est unique !</h1><p>Ce texte est stocké sur mon propre volume persistant.</p></body></html>" > /var/www/html/index.html'
 ```
 
-### Écrire dans le Pod 1 :
+### Pour le Pod 1 :
 ```bash
-oc exec web-1 -- bash -c 'echo "<html><body style=\"background-color:#90EE90\"><h1>Je suis le POD 1</h1><p>J ai mon propre disque, different du Pod 0 !</p> bodies></html>" > /usr/share/nginx/html/index.html'
+oc exec web-1 -- bash -c 'echo "<html><body style=\"background-color:honeydew;text-align:center;padding:50px;\"><h1>POD 1 : J ai mon propre espace !</h1><p>Chaque pod du StatefulSet a son propre disque.</p></body></html>" > /var/www/html/index.html'
 ```
 
 ---
 
 ## Étape 4 : Tester dans le navigateur
 
-Récupérez l'URL de votre route :
+Récupérez l'URL :
 ```bash
-oc get route nginx-route
+oc get route web-route
 ```
 
-1.  Ouvrez l'URL dans votre navigateur (en `https://`).
-2.  Actualisez la page plusieurs fois.
-3.  **Observation** : Vous verrez alterner la page **Bleue (Pod 0)** et la page **Verte (Pod 1)**.
-
-:::info Pourquoi ?
-Le Service répartit votre trafic entre les deux pods. Comme chaque pod a son propre volume, vous voyez bien deux contenus différents. C'est la preuve que **StatefulSet != Deployment** (où les données seraient souvent partagées ou identiques).
-:::
+Ouvrez l'URL et actualisez plusieurs fois. Vous verrez alterner :
+- La page du **Pod 0** (Bleue)
+- La page du **Pod 1** (Verte)
 
 ---
 
-## Étape 5 : Prouver la persistance
+## Étape 5 : Tester la persistance
 
-Nous allons "tuer" le Pod 0 et vérifier qu'il retrouve bien son propre disque bleu au redémarrage.
-
-1.  Supprimez le pod 0 :
-    ```bash
-    oc delete pod web-0
-    ```
-2.  Attendez qu'il revienne en `Running`.
-3.  Actualisez votre navigateur jusqu'à retomber sur le **Pod 0**.
-4.  **Résultat** : La page est toujours **bleue** avec le texte "Je suis le POD 0". 
-
-**Conclusion** : Le pod a retrouvé son identité (`web-0`) et a été automatiquement reconnecté à son volume dédié (`www-web-0`).
+1. Supprimez le pod 0 :
+   ```bash
+   oc delete pod web-0
+   ```
+2. Attendez qu'il soit de nouveau `Running`.
+3. Actualisez votre navigateur.
+4. **Résultat** : Le Pod 0 revient avec sa page bleue intacte ! Le StatefulSet a automatiquement retrouvé le disque `data-web-0` et l'a rattaché au nouveau pod `web-0`.
 
 ---
 
@@ -197,6 +173,5 @@ Nous allons "tuer" le Pod 0 et vérifier qu'il retrouve bien son propre disque b
 
 ```bash
 oc delete -f stateful-visual.yaml
-# N'oubliez pas les PVC qui restent par sécurité !
-oc delete pvc www-web-0 www-web-1
+oc delete pvc data-web-0 data-web-1
 ```
