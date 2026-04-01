@@ -1,8 +1,12 @@
-# Exercice Guidé : Les StatefulSets avec MySQL (Version Simplifiée)
+# Exercice Guidé : Les StatefulSets (Version Visuelle avec Nginx)
 
 ## Ce que vous allez apprendre
 
-Dans cet exercice, vous allez découvrir les **StatefulSets**, un type de ressource Kubernetes indispensable pour les bases de données. Vous allez apprendre comment un StatefulSet garantit une **identité stable** au pod et une **persistance des données** même après la suppression d'un pod.
+Dans cet exercice, vous allez visualiser concrètement les deux piliers d'un **StatefulSet** :
+1.  **L'Identité Stable** : Chaque pod a un nom fixe (`web-0`, `web-1`).
+2.  **Le Stockage Dédié** : Contrairement à un Deployment classique, chaque pod du StatefulSet possède **son propre disque dur persistant**, totalement indépendant des autres.
+
+Nous allons utiliser un serveur web **Nginx** pour afficher le contenu de ces disques directement dans votre navigateur.
 
 ---
 
@@ -10,171 +14,189 @@ Dans cet exercice, vous allez découvrir les **StatefulSets**, un type de ressou
 
 A la fin de cet exercice, vous serez capable de :
 
-- [ ] Déployer un **StatefulSet** MySQL avec son stockage persistant
-- [ ] Vérifier que le pod reçoit un **nom stable** (`mysql-0`)
-- [ ] Prouver la **persistance des données** après la suppression et recréation automatique du pod
-- [ ] Nettoyer proprement les ressources et leurs volumes
+- [ ] Déployer un **StatefulSet** avec un template de volume
+- [ ] Vérifier que chaque pod a son **propre volume (PVC)** distinct
+- [ ] Personnaliser le contenu de chaque volume via le navigateur
+- [ ] Prouver que les données survivent au redémarrage d'un pod spécifique
 
 ---
 
-:::tip Terminal web OpenShift
-Toutes les commandes `oc` de cet exercice sont à exécuter dans le **terminal web OpenShift**.
-:::
+## Étape 1 : Créer le manifeste YAML
 
-## Étape 1 : Créer le fichier de configuration
+Nous allons créer un StatefulSet avec **2 réplicas**, un **Service Headless** (obligatoire pour l'identité réseau) et une **Route** pour accéder à l'interface.
 
-Nous allons définir un StatefulSet MySQL avec **1 seul réplica** pour simplifier l'observation.
-
-Créez un fichier nommé `mysql-app.yaml` :
+Créez un fichier nommé `stateful-visual.yaml` :
 
 ```bash
-vi mysql-app.yaml
+vi stateful-visual.yaml
 ```
 
 Contenu du fichier :
 
 ```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-headless
+  namespace: <CITY>-user-ns
+  labels:
+    app: nginx
+spec:
+  ports:
+  - port: 80
+    name: web
+  clusterIP: None # <-- Ceci définit un service "Headless"
+  selector:
+    app: nginx
+---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: mysql
+  name: web
   namespace: <CITY>-user-ns
 spec:
-  serviceName: "mysql"
-  replicas: 1
+  serviceName: "nginx-headless"
+  replicas: 2
   selector:
     matchLabels:
-      app: mysql
+      app: nginx
   template:
     metadata:
       labels:
-        app: mysql
+        app: nginx
     spec:
       containers:
-      - name: mysql
-        image: registry.access.redhat.com/rhscl/mysql-80-rhel7:latest
-        env:
-        - name: MYSQL_ROOT_PASSWORD
-          value: "rootpassword"
-        - name: MYSQL_DATABASE
-          value: "mydb"
-        - name: MYSQL_USER
-          value: "user"
-        - name: MYSQL_PASSWORD
-          value: "password"
+      - name: nginx
+        image: registry.access.redhat.com/ubi9/nginx-122:latest
         ports:
-        - containerPort: 3306
+        - containerPort: 8080
+          name: web
         resources:
           requests:
-            cpu: "50m"
-            memory: "128Mi"
+            cpu: "10m"
+            memory: "64Mi"
           limits:
-            cpu: "200m"
-            memory: "256Mi"
+            cpu: "100m"
+            memory: "128Mi"
         volumeMounts:
-        - name: mysql-data
-          mountPath: /var/lib/mysql/data
+        - name: www
+          mountPath: /usr/share/nginx/html
   volumeClaimTemplates:
   - metadata:
-      name: mysql-data
+      name: www
     spec:
       accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:
           storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-public
+  namespace: <CITY>-user-ns
+spec:
+  selector:
+    app: nginx
+  ports:
+  - port: 80
+    targetPort: 8080
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: nginx-route
+  namespace: <CITY>-user-ns
+spec:
+  to:
+    kind: Service
+    name: nginx-public
+  tls:
+    termination: edge
 ```
 
-:::info Pourquoi 1 Gi ?
-Le volume persistant (PVC) sera créé automatiquement par OpenShift grâce au **Dynamic Provisioning**. Le StatefulSet s'occupe de lier ce volume spécifiquement au pod `mysql-0`.
+---
+
+## Étape 2 : Déploiement et observation
+
+Appliquez le fichier :
+
+```bash
+oc apply -f stateful-visual.yaml
+```
+
+### 2.1 Observer l'ordre de démarrage
+Le StatefulSet démarre les pods **un par un**. Vérifiez cela :
+```bash
+oc get pods -l app=nginx
+```
+*Le pod `web-1` ne démarrera que lorsque `web-0` sera prêt.*
+
+### 2.2 Vérifier les volumes (PVC)
+C'est le point clé : vous allez voir **deux volumes distincts**, un pour chaque pod.
+```bash
+oc get pvc
+```
+| Nom du PVC | Lié au Pod |
+|---|---|
+| `www-web-0` | `web-0` |
+| `www-web-1` | `web-1` |
+
+---
+
+## Étape 3 : Personnaliser les données (La partie visuelle)
+
+Actuellement, les volumes sont vides. Nous allons écrire un message différent dans chaque pod pour prouver qu'ils ne partagent pas le même disque.
+
+### Écrire dans le Pod 0 :
+```bash
+oc exec web-0 -- bash -c 'echo "<html><body style=\"background-color:#ADD8E6\"><h1>Je suis le POD 0</h1><p>Mon stockage est unique et persistant.</p></body></html>" > /usr/share/nginx/html/index.html'
+```
+
+### Écrire dans le Pod 1 :
+```bash
+oc exec web-1 -- bash -c 'echo "<html><body style=\"background-color:#90EE90\"><h1>Je suis le POD 1</h1><p>J ai mon propre disque, different du Pod 0 !</p> bodies></html>" > /usr/share/nginx/html/index.html'
+```
+
+---
+
+## Étape 4 : Tester dans le navigateur
+
+Récupérez l'URL de votre route :
+```bash
+oc get route nginx-route
+```
+
+1.  Ouvrez l'URL dans votre navigateur (en `https://`).
+2.  Actualisez la page plusieurs fois.
+3.  **Observation** : Vous verrez alterner la page **Bleue (Pod 0)** et la page **Verte (Pod 1)**.
+
+:::info Pourquoi ?
+Le Service répartit votre trafic entre les deux pods. Comme chaque pod a son propre volume, vous voyez bien deux contenus différents. C'est la preuve que **StatefulSet != Deployment** (où les données seraient souvent partagées ou identiques).
 :::
 
 ---
 
-## Étape 2 : Déployer et vérifier
+## Étape 5 : Prouver la persistance
 
-Appliquez le fichier YAML et vérifiez la création du pod et du volume :
+Nous allons "tuer" le Pod 0 et vérifier qu'il retrouve bien son propre disque bleu au redémarrage.
 
-```bash
-oc apply -f mysql-app.yaml
-```
+1.  Supprimez le pod 0 :
+    ```bash
+    oc delete pod web-0
+    ```
+2.  Attendez qu'il revienne en `Running`.
+3.  Actualisez votre navigateur jusqu'à retomber sur le **Pod 0**.
+4.  **Résultat** : La page est toujours **bleue** avec le texte "Je suis le POD 0". 
 
-### Vérifier le pod (Nom stable)
-```bash
-oc get pods -l app=mysql
-```
-*Le nom doit être exactement `mysql-0`.*
-
-### Vérifier le volume (PVC)
-```bash
-oc get pvc
-```
-*Vous devriez voir un PVC nommé `mysql-data-mysql-0` avec le statut `Bound`.*
+**Conclusion** : Le pod a retrouvé son identité (`web-0`) et a été automatiquement reconnecté à son volume dédié (`www-web-0`).
 
 ---
 
-## Étape 3 : Écrire des données
-
-Nous allons utiliser une commande "one-liner" pour créer une table et insérer une donnée sans entrer manuellement dans le pod.
+## Étape 6 : Nettoyage
 
 ```bash
-oc exec mysql-0 -- mysql -u user -ppassword mydb -e "CREATE TABLE test(msg VARCHAR(50)); INSERT INTO test VALUES('Le stockage fonctionne !'); SELECT * FROM test;"
+oc delete -f stateful-visual.yaml
+# N'oubliez pas les PVC qui restent par sécurité !
+oc delete pvc www-web-0 www-web-1
 ```
-
-**Sortie attendue :**
-```
-+---------------------------+
-| msg                       |
-+---------------------------+
-| Le stockage fonctionne !   |
-+---------------------------+
-```
-
----
-
-## Étape 4 : Tester la persistance (Le crash-test)
-
-C'est ici que nous prouvons l'utilité du StatefulSet. Nous allons supprimer le pod. OpenShift va le recréer, et le nouveau pod doit retrouver ses données.
-
-### 4.1 : Supprimer le pod
-```bash
-oc delete pod mysql-0
-```
-
-### 4.2 : Attendre le redémarrage
-Attendez que le pod soit à nouveau `Running` :
-```bash
-oc get pods -l app=mysql -w
-```
-*(Appuyez sur Ctrl+C quand il est prêt)*
-
-### 4.3 : Vérifier les données
-Relancez la commande de lecture :
-```bash
-oc exec mysql-0 -- mysql -u user -ppassword mydb -e "SELECT * FROM test;"
-```
-
-**Si vous revoyez le message, c'est gagné !** Le nouveau pod `mysql-0` a automatiquement récupéré son volume `mysql-data-mysql-0`.
-
----
-
-## Étape 5 : Nettoyage
-
-Attention : Dans un StatefulSet, Kubernetes ne supprime **jamais** les volumes (PVC) automatiquement par sécurité. Il faut le faire à la main.
-
-```bash
-# 1. Supprimer le StatefulSet
-oc delete statefulset mysql
-
-# 2. Supprimer le volume persistant
-oc delete pvc mysql-data-mysql-0
-```
-
----
-
-## Récapitulatif
-
-| Concept | Ce qu'il faut retenir |
-|---|---|
-| **Identité stable** | Le pod s'appelle toujours `mysql-0`, ce qui facilite les sauvegardes et configurations. |
-| **Persistance** | Les données survivent à la suppression du pod car elles sont stockées sur un volume externe lié à son identité. |
-| **Usage** | Recommandé pour toutes les bases de données (MySQL, Postgres, MongoDB, etc.). |
