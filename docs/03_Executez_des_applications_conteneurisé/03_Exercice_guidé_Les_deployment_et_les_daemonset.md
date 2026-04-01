@@ -40,6 +40,12 @@ A la fin de cet exercice, vous serez capable de :
 Un **Deployment** est un objet Kubernetes/OpenShift qui garantit que le nombre souhaité de copies de votre application (réplicas) est toujours en cours d'exécution. Si un pod tombe en panne, il est instantanément recréé. C'est la base de la haute disponibilité.
 :::
 
+### L'application Rollouts Demo
+Pour cet exercice, nous utilisons une application interactive conçue pour visualiser les déploiements. Voici comment elle fonctionne :
+*   **Les carrés de couleur** : Chaque petit carré qui clignote représente une **requête HTTP** traitée avec succès (Code 200 OK) par l'un de vos pods.
+*   **La couleur** : Elle indique quelle version de l'application a répondu. Au début, tous les carrés seront **bleus**. Lors de la mise à jour, vous verrez les carrés **verts** apparaître.
+*   **Les carrés rouges** : Si un carré devient **rouge**, cela signifie qu'une requête a échoué (erreur 500) ou que l'application n'est pas joignable. C'est ce que nous voulons éviter grâce au Rolling Update !
+
 Nous allons utiliser l'application de démo **Rollouts Demo** (version Go/React moderne). Voici ses caractéristiques :
 
 | Paramètre | Valeur | Explication |
@@ -153,7 +159,11 @@ oc get route my-app-route
 
 Copiez l'URL (HOST/PORT) et ouvrez-la dans votre navigateur (utilisez `https://`).
 
-Vous devriez voir une interface moderne affichant une matrice de petits carrés **bleus** qui clignotent. Chaque carré représente une requête traitée par l'un de vos pods.
+Vous devriez voir une interface moderne affichant une matrice de petits carrés **bleus** qui clignotent. 
+
+:::info Que visualisez-vous ?
+Chaque carré clignotant est une requête envoyée par votre navigateur au Service, qui la transmet à l'un de vos deux pods. Comme les deux pods utilisent actuellement l'image `blue`, tous les carrés sont bleus. C'est la preuve que votre **Load Balancer** (le Service OpenShift) répartit bien le trafic entre vos pods.
+:::
 
 ---
 
