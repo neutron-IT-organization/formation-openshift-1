@@ -102,6 +102,9 @@ kind: Route
 metadata:
   name: web-route
   namespace: <CITY>-user-ns
+  annotations:
+    # Désactive les cookies de session pour voir l'alternance entre les pods
+    haproxy.router.openshift.io/disable_cookies: 'true'
 spec:
   to:
     kind: Service
@@ -151,7 +154,13 @@ Récupérez l'URL :
 oc get route web-route
 ```
 
-Ouvrez l'URL et actualisez plusieurs fois. Vous verrez alterner :
+Ouvrez l'URL et actualisez plusieurs fois. 
+
+:::tip Pourquoi je vois toujours le même pod ?
+Par défaut, OpenShift utilise des **sessions collantes** (Sticky Sessions) pour que vous restiez sur le même serveur. Nous avons ajouté une annotation dans le YAML pour désactiver cela. Si vous voyez toujours le même pod, essayez de **rafraîchir la page vigoureusement** ou ouvrez l'URL dans un **onglet de navigation privée**.
+:::
+
+Vous verrez alterner :
 - La page du **Pod 0** (Bleue)
 - La page du **Pod 1** (Verte)
 
