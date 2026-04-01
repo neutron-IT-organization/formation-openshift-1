@@ -4,10 +4,12 @@
 
 Dans cet exercice, vous allez apprendre pas à pas comment **déployer une application web moderne** sur OpenShift, la **mettre à jour sans interruption de service** grâce à la stratégie Rolling Update, puis **revenir en arrière** (rollback) en cas de problème. 
 
+Nous allons utiliser une application de démo visuelle qui affiche une **matrice de carrés de couleur**. Cela vous permettra de voir en temps réel comment OpenShift remplace progressivement les pods de l'ancienne version (carrés bleus) par la nouvelle version (carrés verts).
+
 :::info Prérequis
 Avant de commencer, assurez-vous que :
 - Vous êtes connecté à votre cluster OpenShift avec `oc login`
-- Vous avez un projet actif (vérifiez avec `oc project`)
+- Vous avez un projet actif (votre namespace de travail)
 - Vous avez accès à la console web OpenShift
 :::
 
@@ -23,12 +25,11 @@ Toutes les commandes `oc` de cet exercice sont à exécuter dans le **terminal w
 
 A la fin de cet exercice, vous serez capable de :
 
-- [ ] Comprendre ce qu'est un **Deployment** et pourquoi il est essentiel dans Kubernetes/OpenShift
-- [ ] Créer un déploiement avec **2 réplicas** et des **limites de ressources**
+- [ ] Comprendre ce qu'est un **Deployment** et son rôle dans la gestion du cycle de vie des applications
+- [ ] Créer un déploiement avec **2 réplicas** et des limites de ressources
 - [ ] Exposer l'application via un **Service** et une **Route HTTPS (Edge)**
-- [ ] Observer le comportement d'un **Rolling Update** lors d'une mise à jour d'image
-- [ ] Consulter l'**historique des révisions** d'un déploiement
-- [ ] Effectuer un **rollback** pour revenir à une version précédente
+- [ ] Observer visuellement un **Rolling Update** en direct via l'interface de l'application
+- [ ] Consulter l'**historique des révisions** et effectuer un **rollback**
 - [ ] Vérifier l'état de vos ressources à chaque étape
 
 ---
@@ -36,47 +37,35 @@ A la fin de cet exercice, vous serez capable de :
 ## Étape 1 : Comprendre ce que nous allons déployer
 
 :::note Pourquoi un Deployment ?
-Un **Deployment** est un objet Kubernetes qui gère le cycle de vie de vos pods. Il garantit que le nombre souhaité de réplicas est toujours en cours d'exécution. Si un pod tombe en panne, le Deployment en crée automatiquement un nouveau. C'est la manière standard de déployer des applications **sans état** (stateless) sur OpenShift.
+Un **Deployment** est un objet Kubernetes/OpenShift qui garantit que le nombre souhaité de copies de votre application (réplicas) est toujours en cours d'exécution. Si un pod tombe en panne, il est instantanément recréé. C'est la base de la haute disponibilité.
 :::
 
-Nous allons déployer une application simple basée sur Nginx et UBI 9. Voici les caractéristiques de notre déploiement :
+Nous allons utiliser l'application de démo **Rollouts Demo** (version Go/React moderne). Voici ses caractéristiques :
 
 | Paramètre | Valeur | Explication |
 |---|---|---|
-| **Nom** | `my-deployment` | Le nom de notre déploiement |
-| **Réplicas** | `2` | 2 copies du pod pour la haute disponibilité |
-| **Image** | `registry.access.redhat.com/ubi9/nginx-122:latest` | Serveur web Nginx moderne sur UBI 9 |
-| **Port** | `8080` | Port d'écoute par défaut (non-root) |
-| **CPU request** | `10m` | Le minimum de CPU garanti |
-| **CPU limit** | `100m` | Le maximum de CPU autorisé |
-| **Mémoire request** | `32Mi` | Le minimum de mémoire garanti |
-| **Mémoire limit** | `128Mi` | Le maximum de mémoire autorisé |
-
-:::tip Requests vs Limits
-- **Request** = le minimum garanti. Kubernetes réserve cette quantité de ressources pour votre pod.
-- **Limit** = le maximum autorisé. Si le pod dépasse cette limite, il peut être redémarré (OOMKilled pour la mémoire) ou bridé (throttled pour le CPU).
-
-Toujours définir des requests et limits est une **bonne pratique** pour éviter qu'un pod ne consomme toutes les ressources du cluster.
-:::
+| **Nom** | `my-deployment` | Le nom global de l'application |
+| **Réplicas** | `2` | Nombre de copies pour la haute disponibilité |
+| **Image (V1)** | `docker.io/argoproj/rollouts-demo:blue` | Affiche des carrés **bleus** |
+| **Image (V2)** | `docker.io/argoproj/rollouts-demo:green` | Affiche des carrés **verts** |
+| **Port** | `8080` | Port d'écoute de l'application |
+| **CPU request** | `10m` | Minimum CPU garanti |
+| **CPU limit** | `100m` | Maximum CPU autorisé |
+| **Mémoire limit** | `128Mi` | Maximum mémoire autorisé |
 
 ---
 
 ## Étape 2 : Créer le fichier de déploiement
 
-**Pourquoi cette étape ?** Nous allons créer un fichier YAML qui décrit l'ensemble des ressources nécessaires : le Deployment, le Service et la Route. Ce fichier est la "source de vérité" de notre application.
+**Pourquoi cette étape ?** Nous définissons l'infrastructure sous forme de code (YAML) pour automatiser le déploiement du Deployment, du Service et de la Route HTTPS.
 
-Créez un fichier nommé `my-app.yaml` avec le contenu suivant :
+Créez un fichier nommé `my-app.yaml` :
 
 ```bash
 vi my-app.yaml
 ```
 
-:::tip Préférez nano ?
-Si vous n'êtes pas à l'aise avec `vi`, utilisez `nano` à la place :
-```bash
-nano my-app.yaml
-```
-:::
+Contenu du fichier :
 
 ```yaml
 apiVersion: apps/v1
@@ -102,7 +91,8 @@ spec:
     spec:
       containers:
       - name: my-container
-        image: registry.access.redhat.com/ubi9/nginx-122:latest
+        image: docker.io/argoproj/rollouts-demo:blue
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
         resources:
@@ -136,170 +126,76 @@ spec:
     termination: edge
 ```
 
-:::info Décryptage du YAML
-Voici les sections clés à comprendre :
-
-- **`replicas: 2`** : nous voulons 2 pods identiques en permanence.
-- **`ports.containerPort: 8080`** : Nginx sur UBI écoute sur le port 8080 pour pouvoir s'exécuter sans droits root.
-- **`Service`** : expose l'application sur un port stable à l'intérieur du cluster.
-- **`Route`** : permet l'accès depuis l'extérieur. L'option **`tls.termination: edge`** configure HTTPS avec le certificat géré par le routeur OpenShift.
-- **`strategy.type: RollingUpdate`** : lors d'une mise à jour, les pods sont remplacés progressivement.
-- **`maxSurge: 1`** : pendant la mise à jour, au maximum 1 pod supplémentaire peut être créé.
-- **`maxUnavailable: 0`** : ici, nous forçons à ce qu'aucun pod ne soit indisponible pour garantir 100% de disponibilité.
-:::
-
 ---
 
-## Étape 3 : Appliquer le déploiement
+## Étape 3 : Appliquer le déploiement et accéder à la démo
 
-**Pourquoi cette étape ?** Nous allons envoyer notre fichier YAML à OpenShift pour créer les trois ressources.
+Appliquez le fichier YAML :
 
 ```bash
 oc apply -f my-app.yaml
 ```
 
-**Sortie attendue :**
-
-```
-deployment.apps/my-deployment created
-service/my-app-svc created
-route.route.openshift.io/my-app-route created
-```
-
-:::tip Bonne pratique
-Utilisez toujours `oc apply -f` plutôt que `oc create -f`. La commande `apply` est **idempotente** : elle crée la ressource si elle n'existe pas, ou la met à jour si elle existe déjà.
-:::
-
----
-
-## Étape 4 : Vérifier le déploiement
-
-**Pourquoi cette étape ?** Après avoir créé un déploiement, il est essentiel de vérifier que tout s'est bien passé.
-
-### 4.1 : Vérifier l'état du Deployment
-
-```bash
-oc get deployments
-```
-
-**Sortie attendue :**
-
-```
-NAME            READY   UP-TO-DATE   AVAILABLE   AGE
-my-deployment   2/2     2            2           30s
-```
-
-### 4.2 : Vérifier les pods
-
-```bash
-oc get pods
-```
-
-**Sortie attendue :**
-
-```
-NAME                             READY   STATUS    RESTARTS   AGE
-my-deployment-5d8f6b7c4a-abc12   1/1     Running   0          30s
-my-deployment-5d8f6b7c4a-def34   1/1     Running   0          30s
-```
-
-### 4.3 : Vérifier la Route
-
-Récupérez l'URL de votre application :
+### 3.1 : Accéder à l'application
+Récupérez l'URL HTTPS générée par la Route :
 
 ```bash
 oc get route my-app-route
 ```
 
-Testez l'accès en HTTPS :
+Copiez l'URL (HOST/PORT) et ouvrez-la dans votre navigateur (utilisez `https://`).
 
-```bash
-curl -I -k https://$(oc get route my-app-route -o jsonpath='{.spec.host}')
-```
-
-**Sortie attendue :**
-```
-HTTP/1.1 200 OK
-...
-```
+Vous devriez voir une interface moderne affichant une matrice de petits carrés **bleus** qui clignotent. Chaque carré représente une requête traitée par l'un de vos pods.
 
 ---
 
-## Étape 5 : Mettre à jour l'application (Rolling Update)
+## Étape 4 : Mettre à jour l'application (Rolling Update Visuel)
 
-**Pourquoi cette étape ?** Le Rolling Update permet de mettre à jour l'image sans interruption de service.
+**Pourquoi cette étape ?** C'est ici que vous voyez la puissance d'OpenShift. Nous allons mettre à jour l'application vers la version "green" sans couper le service.
 
-### 5.1 : Lancer la mise à jour
-
-Nous allons passer à Nginx 1.24 :
+### 4.1 : Lancer la mise à jour
+Dans votre terminal, lancez la commande suivante :
 
 ```bash
-oc set image deployment/my-deployment my-container=registry.access.redhat.com/ubi9/nginx-124:latest
+oc set image deployment/my-deployment my-container=docker.io/argoproj/rollouts-demo:green
 ```
 
-### 5.2 : Suivre le déploiement
+### 4.2 : Observer le résultat (En direct !)
+Retournez immédiatement sur votre navigateur. Vous allez voir les carrés **bleus** être remplacés progressivement par des carrés **verts**.
+
+*   C'est le **Rolling Update** : OpenShift crée les nouveaux pods "verts" et s'assure qu'ils sont prêts avant de supprimer les anciens pods "bleus".
+*   Grâce au paramètre `maxUnavailable: 0`, vous ne devriez voir aucune interruption (aucune erreur de chargement dans les carrés).
+
+Vérifiez le statut via la CLI :
 
 ```bash
 oc rollout status deployment/my-deployment
 ```
 
-**Sortie attendue :**
-```
-deployment "my-deployment" successfully rolled out
-```
-
-### 5.3 : Vérifier l'image
-
-```bash
-oc get deployment my-deployment -o jsonpath='{.spec.template.spec.containers[0].image}'
-```
-
-**Sortie attendue :**
-```
-registry.access.redhat.com/ubi9/nginx-124:latest
-```
-
 ---
 
-## Étape 6 : Consulter l'historique
+## Étape 5 : Consulter l'historique et faire un Rollback
+
+En cas de problème sur la version "green", vous pouvez revenir en arrière instantanément.
+
+### 5.1 : Liste des révisions
 
 ```bash
 oc rollout history deployment/my-deployment
 ```
 
-**Sortie attendue :**
-```
-REVISION  CHANGE-CAUSE
-1         <none>
-2         <none>
-```
-
----
-
-## Étape 7 : Effectuer un rollback
-
-:::warning Scénario
-Imaginons que la version `nginx-124:latest` pose un problème. Nous revenons à la version `nginx-122:latest`.
-:::
+### 5.2 : Effectuer le rollback
+Revenons à la version bleue :
 
 ```bash
 oc rollout undo deployment/my-deployment
 ```
 
-### Vérifier le succès du rollback
-
-```bash
-oc get deployment my-deployment -o jsonpath='{.spec.template.spec.containers[0].image}'
-```
-
-**Sortie attendue :**
-```
-registry.access.redhat.com/ubi9/nginx-122:latest
-```
+Observez à nouveau votre navigateur : les carrés redeviennent **bleus** progressivement.
 
 ---
 
-## Étape 8 : Nettoyage
+## Étape 6 : Nettoyage
 
 ```bash
 oc delete -f my-app.yaml
@@ -309,25 +205,13 @@ oc delete -f my-app.yaml
 
 ## Récapitulatif
 
-| Étape | Commande | Description |
+| Action | Commande | Visualisation attendue |
 |---|---|---|
-| Créer les ressources | `oc apply -f my-app.yaml` | Crée le Deployment, Service et Route |
-| Vérifier le déploiement | `oc get deployments` | Affiche l'état des déploiements |
-| Lister les pods | `oc get pods` | Affiche les pods en cours d'exécution |
-| Accéder à la route | `oc get route my-app-route` | Récupère l'URL HTTPS externe |
-| Mettre à jour l'image | `oc set image deployment/my-deployment my-container=<image>` | Lance un Rolling Update |
-| Suivre la mise à jour | `oc rollout status deployment/my-deployment` | Affiche la progression du rollout |
-| Voir l'historique | `oc rollout history deployment/my-deployment` | Liste les révisions |
-| Rollback | `oc rollout undo deployment/my-deployment` | Revient à la version précédente |
-| Supprimer | `oc delete -f my-app.yaml` | Supprime toutes les ressources |
+| Déploiement initial | `oc apply -f my-app.yaml` | Matrice de carrés **bleus** |
+| Mise à jour | `oc set image ...=...:green` | Transition progressive **Bleu -> Vert** |
+| Rollback | `oc rollout undo ...` | Transition de retour **Vert -> Bleu** |
 
-### Concepts clés
-
-| Concept | Explication |
-|---|---|
-| **Deployment** | Objet qui gère le cycle de vie des pods |
-| **Service** | Expose les pods à l'intérieur du cluster |
-| **Route** | Génère une URL publique via le router OpenShift |
-| **Rolling Update** | Mise à jour progressive sans interruption |
-| **Rollback** | Retour à une version précédente |
-| **Requests / Limits** | Gestion des ressources CPU et Mémoire |
+### Pourquoi cette méthode est moderne ?
+*   **Zero Downtime** : L'utilisation de `maxUnavailable: 0` garantit que l'utilisateur n'a jamais d'erreur pendant la mise à jour.
+*   **Visibilité** : Le changement de couleur par pod/requête permet de comprendre immédiatement le concept de répartition de charge (Load Balancing) et de mise à jour progressive.
+*   **Sécurité** : La route utilise une terminaison **TLS Edge**, standard de l'industrie pour sécuriser l'accès aux microservices.
