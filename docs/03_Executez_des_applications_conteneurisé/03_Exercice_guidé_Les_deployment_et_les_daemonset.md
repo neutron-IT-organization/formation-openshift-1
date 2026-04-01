@@ -172,7 +172,7 @@ oc set image deployment/my-deployment my-container=docker.io/argoproj/rollouts-d
 Retournez immédiatement sur votre navigateur. Vous allez voir les carrés **bleus** être remplacés progressivement par des carrés **verts**.
 
 *   C'est le **Rolling Update** : OpenShift crée les nouveaux pods "verts" et s'assure qu'ils sont prêts avant de supprimer les anciens pods "bleus".
-*   Grâce au paramètre `maxUnavailable: 0`, vous ne devriez voir aucune interruption (aucune erreur de chargement dans les carrés).
+*   Grâce au paramètre `maxUnavailable: 1`, vous ne devriez voir aucune interruption puisque l'un des deux pods reste actif pendant que l'autre est mis à jour.
 
 Vérifiez le statut via la CLI :
 
