@@ -77,6 +77,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: my-deployment
+  namespace: <CITY>-user-ns
   labels:
     app: my-app
 spec:
@@ -112,6 +113,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: my-app-svc
+  namespace: <CITY>-user-ns
 spec:
   selector:
     app: my-app
@@ -123,6 +125,7 @@ apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
   name: my-app-route
+  namespace: <CITY>-user-ns
 spec:
   to:
     kind: Service
