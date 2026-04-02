@@ -313,7 +313,7 @@ spec:
     kind: Service
     name: welcome-svc
   port:
-    targetPort: 80
+    targetPort: 8080
   tls:
     termination: edge
     insecureEdgeTerminationPolicy: Redirect
