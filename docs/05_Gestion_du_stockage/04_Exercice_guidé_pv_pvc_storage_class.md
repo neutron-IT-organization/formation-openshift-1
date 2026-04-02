@@ -90,18 +90,13 @@ Avant de résoudre un problème, il faut le **voir** de ses propres yeux. Vous a
 Commencez par inspecter la configuration des volumes du déploiement PostgreSQL :
 
 ```bash
-oc get deployment postgres -o jsonpath='{.spec.template.spec.volumes}' | python3 -m json.tool
+oc get deployment postgres -o jsonpath='{.spec.template.spec.volumes}'
 ```
 
 **Sortie attendue :**
 
-```json
-[
-    {
-        "name": "postgres-storage",
-        "emptyDir": {}
-    }
-]
+```
+[{"emptyDir":{},"name":"postgres-storage"}]
 ```
 
 :::info Que signifie emptyDir ?
@@ -187,7 +182,20 @@ Pour que les données survivent à la suppression d'un pod, nous avons besoin d'
 
 ### 2.1 - Créer le fichier PVC
 
-Créez un fichier nommé `postgres-pvc.yaml` avec le contenu suivant :
+Créez un fichier nommé `postgres-pvc.yaml` :
+
+```bash
+vi postgres-pvc.yaml
+```
+
+:::tip Vous préférez nano ?
+```bash
+nano postgres-pvc.yaml
+```
+Pour coller du contenu dans le terminal web : `Ctrl+Shift+V`. Pour sauvegarder : `Ctrl+O` puis `Entrée`. Pour quitter : `Ctrl+X`.
+:::
+
+Contenu du fichier :
 
 ```yaml
 apiVersion: v1
@@ -209,14 +217,6 @@ spec:
 :::
 
 ### 2.2 - Appliquer le PVC
-
-#### Méthode 1 : Via la console web (bouton +)
-
-Cliquez sur le bouton **+** en haut à droite de la console, collez le contenu du fichier `postgres-pvc.yaml` et cliquez sur **Create**.
-
-![Bouton + pour importer du YAML dans la console OpenShift](/img/screenshots/console-add-button.png)
-
-#### Méthode 2 : Via le terminal
 
 ```bash
 oc apply -f postgres-pvc.yaml
@@ -259,101 +259,25 @@ Avant de passer à la suite, assurez-vous que :
 
 ### Pourquoi cette étape ?
 
-Le PVC existe maintenant, mais PostgreSQL ne l'utilise pas encore. Nous devons modifier le déploiement pour **remplacer** le volume `emptyDir` par notre PVC.
+Le PVC existe maintenant, mais PostgreSQL ne l'utilise pas encore. Nous devons modifier le déploiement pour **remplacer** le volume `emptyDir` par notre PVC. Nous allons utiliser `oc patch` pour modifier uniquement la section volumes du déploiement existant, sans recréer de fichier YAML complet.
 
-### 3.1 - Créer le fichier de déploiement modifié
-
-Créez un fichier `postgres-pvc-deployment.yaml` avec le contenu suivant :
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: postgres
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: postgres
-  template:
-    metadata:
-      labels:
-        app: postgres
-    spec:
-      volumes:
-        - name: postgres-storage
-          # highlight-start
-          persistentVolumeClaim:      # Avant : emptyDir: {}
-            claimName: postgres-pvc   # Référence vers notre PVC
-          # highlight-end
-      containers:
-        - name: postgres
-          image: registry.access.redhat.com/rhscl/postgresql-12-rhel7:latest
-          ports:
-            - containerPort: 5432
-          env:
-            - name: POSTGRESQL_USER
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-credentials
-                  key: POSTGRES_USER
-            - name: POSTGRESQL_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-credentials
-                  key: POSTGRES_PASSWORD
-            - name: POSTGRESQL_DATABASE
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-credentials
-                  key: POSTGRES_DB
-          volumeMounts:
-            - name: postgres-storage
-              mountPath: /var/lib/pgsql/data   # Répertoire de données PostgreSQL
-```
-
-:::info Qu'est-ce qui a changé ?
-La seule différence par rapport au déploiement initial est la section `volumes`. Au lieu de :
-```yaml
-volumes:
-  - name: postgres-storage
-    emptyDir: {}
-```
-Nous avons maintenant :
-```yaml
-volumes:
-  - name: postgres-storage
-    persistentVolumeClaim:
-      claimName: postgres-pvc
-```
-Tout le reste (container, ports, variables d'environnement, volumeMounts) est **identique**.
-:::
-
-### 3.2 - Appliquer le nouveau déploiement
-
-#### Méthode 1 : Via la console web (bouton +)
-
-Cliquez sur le bouton **+** en haut à droite de la console, collez le contenu du fichier `postgres-pvc-deployment.yaml` et cliquez sur **Create**.
-
-![Bouton + pour importer du YAML dans la console OpenShift](/img/screenshots/console-add-button.png)
-
-#### Méthode 2 : Via le terminal
+### 3.1 - Patcher le déploiement
 
 ```bash
-oc apply -f postgres-pvc-deployment.yaml
+oc patch deployment postgres -p '{"spec":{"template":{"spec":{"volumes":[{"name":"postgres-storage","persistentVolumeClaim":{"claimName":"postgres-pvc"}}]}}}}'
 ```
 
 **Sortie attendue :**
 
 ```
-deployment.apps/postgres configured
+deployment.apps/postgres patched
 ```
 
-:::note "configured" et non "created"
-Le message dit `configured` car le déploiement `postgres` existait déjà. Kubernetes a **mis à jour** la configuration existante au lieu d'en créer une nouvelle.
+:::info Que fait cette commande ?
+`oc patch` applique une modification partielle à une ressource existante. Ici, on remplace uniquement la liste des volumes du pod template : l'`emptyDir` est remplacé par une référence à notre PVC `postgres-pvc`. Tout le reste du déploiement (container, ports, variables d'environnement, volumeMounts) reste **inchangé**.
 :::
 
-### 3.3 - Attendre que le nouveau pod soit prêt
+### 3.2 - Attendre que le nouveau pod soit prêt
 
 ```bash
 oc rollout status deployment/postgres
@@ -378,23 +302,16 @@ NAME                        READY   STATUS    RESTARTS   AGE
 postgres-xxxxxxxxx-zzzzz    1/1     Running   0          30s
 ```
 
-### 3.4 - Vérifier que le PVC est bien utilisé
+### 3.3 - Vérifier que le PVC est bien utilisé
 
 ```bash
-oc get deployment postgres -o jsonpath='{.spec.template.spec.volumes}' | python3 -m json.tool
+oc get deployment postgres -o jsonpath='{.spec.template.spec.volumes[0].persistentVolumeClaim.claimName}'
 ```
 
 **Sortie attendue :**
 
-```json
-[
-    {
-        "name": "postgres-storage",
-        "persistentVolumeClaim": {
-            "claimName": "postgres-pvc"
-        }
-    }
-]
+```
+postgres-pvc
 ```
 
 :::tip Confirmé !
@@ -405,8 +322,7 @@ Le volume `emptyDir` a bien été remplacé par un `persistentVolumeClaim`. Post
 
 Avant de passer à la suite, assurez-vous que :
 
-- [x] Vous avez créé le fichier `postgres-pvc-deployment.yaml`
-- [x] Le déploiement a été mis à jour (`configured`)
+- [x] Le déploiement a été patché (`patched`)
 - [x] Le rollout est terminé avec succès
 - [x] Le volume est désormais un `persistentVolumeClaim` (et non plus `emptyDir`)
 
@@ -560,16 +476,16 @@ Avant de passer à la suite, assurez-vous que :
 
 Il est important de nettoyer les ressources créées pendant l'exercice pour ne pas laisser de stockage inutilisé dans le cluster.
 
-Supprimez le déploiement modifié et le PVC :
+Remettez le déploiement PostgreSQL en `emptyDir` (état initial) puis supprimez le PVC :
 
 ```bash
-oc delete -f postgres-pvc-deployment.yaml
+oc patch deployment postgres -p '{"spec":{"template":{"spec":{"volumes":[{"name":"postgres-storage","emptyDir":{}}]}}}}'
 ```
 
 **Sortie attendue :**
 
 ```
-deployment.apps "postgres" deleted
+deployment.apps/postgres patched
 ```
 
 ```bash
@@ -627,7 +543,7 @@ Vous avez réalisé les étapes suivantes :
 
 1. **Constaté le problème** : avec `emptyDir`, les données PostgreSQL sont perdues à chaque redémarrage de pod
 2. **Créé un PVC** : une demande de 1 Go de stockage persistant
-3. **Modifié le déploiement** : remplacement du volume `emptyDir` par le PVC
+3. **Patché le déploiement** : remplacement du volume `emptyDir` par le PVC via `oc patch`
 4. **Vérifié la solution** : les données survivent maintenant à la suppression du pod
 5. **Exploré l'infrastructure** : compréhension du lien entre PVC, PV et Storage Class
 

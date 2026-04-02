@@ -12,6 +12,12 @@ Vous apprendrez également à lever l'isolation réseau entre les namespaces via
 
 ---
 
+:::tip Terminal web OpenShift
+Toutes les commandes `oc` de cet exercice sont à exécuter dans le **terminal web OpenShift**. Cliquez sur l'icône de terminal en haut à droite de la console pour l'ouvrir.
+
+![Icône du terminal web](/img/screenshots/web_terminal_icon.png)
+:::
+
 ## Objectifs
 
 - [ ] Déployer une application web
@@ -23,6 +29,19 @@ Vous apprendrez également à lever l'isolation réseau entre les namespaces via
 ## Étape 1 : Déployer l'application
 
 Créez le fichier `welcome-deployment.yaml` :
+
+```bash
+vi welcome-deployment.yaml
+```
+
+:::tip Vous préférez nano ?
+```bash
+nano welcome-deployment.yaml
+```
+Pour coller du contenu dans le terminal web : `Ctrl+Shift+V`. Pour sauvegarder : `Ctrl+O` puis `Entrée`. Pour quitter : `Ctrl+X`.
+:::
+
+Contenu du fichier :
 
 ```yaml
 apiVersion: apps/v1
@@ -54,8 +73,28 @@ spec:
             memory: "128Mi"
 ```
 
+#### Méthode 1 : Via la console web (bouton +)
+
+Cliquez sur le bouton **+** en haut à droite de la console, collez le contenu du fichier `welcome-deployment.yaml` et cliquez sur **Create**.
+
+![Bouton + pour importer du YAML dans la console OpenShift](/img/screenshots/console-add-button.png)
+
+#### Méthode 2 : Via le terminal
+
 ```bash
 oc apply -f welcome-deployment.yaml
+```
+
+**Sortie attendue :**
+
+```
+deployment.apps/welcome-app created
+```
+
+Vérifiez que le pod démarre correctement :
+
+```bash
+oc get pods -l app=welcome-app
 ```
 
 ---
@@ -64,7 +103,23 @@ oc apply -f welcome-deployment.yaml
 
 Par défaut, dans l'environnement de formation, les namespaces sont isolés. Pour que vous puissiez effectuer des tests de communication (via `curl` depuis votre terminal web ou entre vos namespaces), il faut autoriser le trafic entrant vers votre application.
 
+:::info Pourquoi une NetworkPolicy ?
+Le terminal web OpenShift s'exécute dans le namespace `openshift-terminal`. Sans NetworkPolicy, il ne peut pas joindre votre pod par son IP ou par la ClusterIP du service. Cette politique lève l'isolation pour l'application `welcome-app`.
+:::
+
 Créez le fichier `welcome-policy.yaml` :
+
+```bash
+vi welcome-policy.yaml
+```
+
+:::tip Vous préférez nano ?
+```bash
+nano welcome-policy.yaml
+```
+:::
+
+Contenu du fichier :
 
 ```yaml
 apiVersion: networking.k8s.io/v1
@@ -83,8 +138,22 @@ spec:
   - Ingress
 ```
 
+#### Méthode 1 : Via la console web (bouton +)
+
+Cliquez sur le bouton **+** en haut à droite de la console, collez le contenu du fichier `welcome-policy.yaml` et cliquez sur **Create**.
+
+![Bouton + pour importer du YAML dans la console OpenShift](/img/screenshots/console-add-button.png)
+
+#### Méthode 2 : Via le terminal
+
 ```bash
 oc apply -f welcome-policy.yaml
+```
+
+**Sortie attendue :**
+
+```
+networkpolicy.networking.k8s.io/allow-multi-namespace-ingress created
 ```
 
 ---
@@ -93,7 +162,7 @@ oc apply -f welcome-policy.yaml
 
 ### 3.1 Récupérer l'IP du Pod
 ```bash
-oc get pods -o wide
+oc get pods -l app=welcome-app -o wide
 ```
 *Notez l'IP dans la colonne `IP`.*
 
@@ -104,12 +173,34 @@ Lancez un `curl` directement dans votre terminal web :
 curl -s <POD_IP>:8080 | grep "Bienvenue"
 ```
 
+**Sortie attendue :**
+
+```
+<h1>Bienvenue</h1>
+```
+
+:::warning IP instable
+L'IP d'un pod change à chaque recréation. C'est pourquoi on utilise un **Service** pour accéder à l'application de manière stable.
+:::
+
 ---
 
 ## Étape 4 : Créer et tester le Service ClusterIP (Stable)
 
 ### 4.1 Créer le service
 Créez le fichier `welcome-clusterip.yaml` :
+
+```bash
+vi welcome-clusterip.yaml
+```
+
+:::tip Vous préférez nano ?
+```bash
+nano welcome-clusterip.yaml
+```
+:::
+
+Contenu du fichier :
 
 ```yaml
 apiVersion: v1
@@ -127,8 +218,22 @@ spec:
   type: ClusterIP
 ```
 
+#### Méthode 1 : Via la console web (bouton +)
+
+Cliquez sur le bouton **+** en haut à droite de la console, collez le contenu du fichier `welcome-clusterip.yaml` et cliquez sur **Create**.
+
+![Bouton + pour importer du YAML dans la console OpenShift](/img/screenshots/console-add-button.png)
+
+#### Méthode 2 : Via le terminal
+
 ```bash
 oc apply -f welcome-clusterip.yaml
+```
+
+**Sortie attendue :**
+
+```
+service/welcome-svc created
 ```
 
 ### 4.2 Tester via l'IP du Service
@@ -142,6 +247,12 @@ oc get svc welcome-svc
 curl -s <CLUSTER_IP>:80 | grep "Bienvenue"
 ```
 
+**Sortie attendue :**
+
+```
+<h1>Bienvenue</h1>
+```
+
 ---
 
 ## Étape 5 : Créer et tester le Service NodePort
@@ -150,6 +261,18 @@ Le NodePort expose l'application sur un port fixe de votre serveur (le noeud).
 
 ### 5.1 Créer le service NodePort
 Créez le fichier `welcome-nodeport.yaml` :
+
+```bash
+vi welcome-nodeport.yaml
+```
+
+:::tip Vous préférez nano ?
+```bash
+nano welcome-nodeport.yaml
+```
+:::
+
+Contenu du fichier :
 
 ```yaml
 apiVersion: v1
@@ -168,8 +291,22 @@ spec:
   type: NodePort
 ```
 
+#### Méthode 1 : Via la console web (bouton +)
+
+Cliquez sur le bouton **+** en haut à droite de la console, collez le contenu du fichier `welcome-nodeport.yaml` et cliquez sur **Create**.
+
+![Bouton + pour importer du YAML dans la console OpenShift](/img/screenshots/console-add-button.png)
+
+#### Méthode 2 : Via le terminal
+
 ```bash
 oc apply -f welcome-nodeport.yaml
+```
+
+**Sortie attendue :**
+
+```
+service/welcome-svc-nodeport created
 ```
 
 ### 5.2 Tester via l'IP du Noeud
@@ -184,6 +321,18 @@ curl -s http://192.168.0.251:30080 | grep "Bienvenue"
 
 ### 6.1 Créer la Route Edge
 Créez le fichier `welcome-route.yaml` :
+
+```bash
+vi welcome-route.yaml
+```
+
+:::tip Vous préférez nano ?
+```bash
+nano welcome-route.yaml
+```
+:::
+
+Contenu du fichier :
 
 ```yaml
 apiVersion: route.openshift.io/v1
@@ -202,8 +351,22 @@ spec:
     insecureEdgeTerminationPolicy: Redirect
 ```
 
+#### Méthode 1 : Via la console web (bouton +)
+
+Cliquez sur le bouton **+** en haut à droite de la console, collez le contenu du fichier `welcome-route.yaml` et cliquez sur **Create**.
+
+![Bouton + pour importer du YAML dans la console OpenShift](/img/screenshots/console-add-button.png)
+
+#### Méthode 2 : Via le terminal
+
 ```bash
 oc apply -f welcome-route.yaml
+```
+
+**Sortie attendue :**
+
+```
+route.route.openshift.io/welcome-route created
 ```
 
 ### 6.2 Tester dans le navigateur
