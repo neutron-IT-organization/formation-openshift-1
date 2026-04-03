@@ -152,6 +152,7 @@ apiVersion: v1
 kind: ResourceQuota
 metadata:
   name: quota-formation
+  namespace: <CITY>-user-ns
 spec:
   hard:
     requests.cpu: "900m"       # Max 900 millicores en requests
@@ -160,6 +161,10 @@ spec:
     limits.memory: "1Gi"       # Max 1 Gi en limits
     pods: "5"                  # Max 5 pods
 ```
+
+:::info Un quota ArgoCD est déjà en place
+Votre namespace possède déjà un quota `formation-quota` géré par ArgoCD avec des limites plus larges. Le quota `quota-formation` que vous créez ici est **plus restrictif** (`requests.cpu: 900m`), c'est donc lui qui sera contraignant pour cet exercice.
+:::
 
 :::warning Pourquoi 900m pour le CPU request ?
 Le quota de `900m` en `requests.cpu` est choisi volontairement pour permettre **exactement 3 pods** de notre déploiement (3 x 300m = 900m). Cela va nous permettre d'observer le blocage quand on tentera de créer un 4eme pod.
@@ -218,9 +223,23 @@ requests.memory    128Mi   512Mi
 
 ### Vérification
 
+Vérifiez que votre quota est bien créé (vous verrez les deux quotas présents dans le namespace) :
+
+```bash
+oc get resourcequota
+```
+
+**Sortie attendue :**
+
+```
+NAME               AGE   REQUEST                                                                   LIMIT
+formation-quota    10m   requests.cpu: 302m/2, requests.memory: 136Mi/1Gi, ...                    limits.cpu: 600m/2, ...
+quota-formation    5s    requests.cpu: 300m/900m, requests.memory: 128Mi/512Mi, pods: 1/5          limits.cpu: 600m/2, limits.memory: 256Mi/1Gi
+```
+
 :::note Checklist de vérification - Etape 2
 Avant de passer à l'étape suivante, assurez-vous que :
-- Le quota `quota-formation` existe (`oc get resourcequota`)
+- Le quota `quota-formation` existe dans la liste
 - La colonne **Used** pour `requests.cpu` affiche **300m** (notre unique pod)
 - La colonne **Hard** pour `requests.cpu` affiche **900m**
 :::
@@ -277,9 +296,9 @@ oc get events --sort-by='.lastTimestamp' | tail -5
 **Sortie attendue :**
 
 ```
-LAST SEEN   TYPE      REASON          OBJECT                              MESSAGE
-30s         Normal    ScalingReplicaSet   deployment/quota-demo-app          Scaled up replica set quota-demo-app-5d4f7b8c9 to 4
-30s         Warning   FailedCreate        replicaset/quota-demo-app-5d4f7b8c9   Error creating: pods "quota-demo-app-5d4f7b8c9-ij5kl" is forbidden: exceeded quota: quota-formation, requested: requests.cpu=300m, used: requests.cpu=900m, limited: requests.cpu=900m
+LAST SEEN   TYPE      REASON              OBJECT                                  MESSAGE
+30s         Normal    ScalingReplicaSet   deployment/quota-demo-app               Scaled up replica set quota-demo-app-5d4f7b8c9 to 4
+30s         Warning   FailedCreate        replicaset/quota-demo-app-5d4f7b8c9    Error creating: pods "quota-demo-app-5d4f7b8c9-ij5kl" is forbidden: exceeded quota: quota-formation, requested: requests.cpu=300m, used: requests.cpu=900m, limited: requests.cpu=900m
 ```
 
 :::info Décryptage du message d'erreur
@@ -288,12 +307,12 @@ Décomposons le message ligne par ligne :
 | Partie du message | Signification |
 |---|---|
 | `FailedCreate` | OpenShift n'a pas pu créer le pod |
-| `exceeded quota: quota-formation` | Le quota nommé `quota-formation` a été dépassé |
-| `requested: requests.cpu=300m` | Le 4eme pod demande 300m de CPU supplémentaires |
-| `used: requests.cpu=900m` | Les 3 pods existants utilisent déjà 900m (le maximum) |
-| `limited: requests.cpu=900m` | Le quota autorise au maximum 900m |
+| `exceeded quota: quota-formation` | Le quota nommé `quota-formation` (celui que vous avez créé) a été dépassé |
+| `requested: requests.cpu=300m` | Le 4ème pod demande 300m de CPU supplémentaires |
+| `used: requests.cpu=900m` | Les 3 pods existants utilisent déjà 900m (le maximum autorisé par votre quota) |
+| `limited: requests.cpu=900m` | Votre quota autorise au maximum 900m |
 
-En résumé : les 3 premiers pods ont déjà consommé la totalité du budget CPU (900m). Il n'y a plus de place pour un 4eme pod qui demande 300m de plus.
+En résumé : les 3 premiers pods ont consommé la totalité du budget CPU défini dans `quota-formation`. Le quota `formation-quota` (géré par ArgoCD) n'intervient pas ici car sa limite est plus haute.
 :::
 
 Vérifiez le nombre de réplicas souhaité vs disponible sur le déploiement :
@@ -404,7 +423,7 @@ Il est important de supprimer les ressources créées pendant l'exercice pour ne
 
 ### Instructions
 
-Supprimez le déploiement et le quota :
+Supprimez le déploiement et le quota que vous avez créé (`quota-formation`). Ne supprimez pas `formation-quota`, il est géré par ArgoCD :
 
 ```bash
 oc delete deployment quota-demo-app
@@ -418,7 +437,7 @@ deployment.apps "quota-demo-app" deleted
 resourcequota "quota-formation" deleted
 ```
 
-Vérifiez que tout est bien supprimé :
+Vérifiez que tout est bien nettoyé. Seul `formation-quota` doit rester :
 
 ```bash
 oc get deployment -l app=quota-demo-app
@@ -429,6 +448,8 @@ oc get resourcequota
 
 ```
 No resources found in votre-namespace namespace.
+NAME              AGE
+formation-quota   1h
 ```
 
 ### Vérification
@@ -436,6 +457,7 @@ No resources found in votre-namespace namespace.
 :::note Checklist de vérification - Etape 5
 Assurez-vous que :
 - Plus aucun pod `quota-demo-app` ne tourne (`oc get pods`)
+- Seul `formation-quota` apparaît dans `oc get resourcequota` (votre `quota-formation` est supprimé)
 - Le quota `quota-formation` n'existe plus (`oc get resourcequota`)
 :::
 
