@@ -157,22 +157,6 @@ Cliquez sur **Create**.
 - **StorageClass par défaut** : le cluster choisit automatiquement comment provisionner le stockage physique.
 :::
 
-### 2.2 - Vérifier que le PVC est lié
-
-Après la création, vous êtes redirigé vers la page de détail du PVC `postgres-pvc`. Vérifiez que le champ **Status** affiche **Bound**.
-
-:::warning Le statut doit être "Bound"
-Si le statut est `Pending`, attendez quelques secondes et rafraîchissez la page. Si le statut reste `Pending`, demandez à votre formateur de vérifier la configuration du cluster.
-:::
-
-### Vérification de l'étape 2
-
-Avant de passer à la suite, assurez-vous que :
-
-- [x] Vous avez rempli le formulaire de création du PVC
-- [x] Le PVC `postgres-pvc` est en statut **Bound**
-
----
 
 ## Étape 3 : Modifier le déploiement PostgreSQL pour utiliser le PVC
 
